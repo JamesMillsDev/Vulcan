@@ -318,5 +318,4 @@ namespace Vulcan
 
 		return value;
 	}
-
 }

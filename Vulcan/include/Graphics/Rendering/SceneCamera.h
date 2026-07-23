@@ -16,7 +16,7 @@ namespace Vulcan
 
 	public:
 		void SetTransform(Transform* transform);
-		void GetPvm(ProjectionViewModelUniform& pvm) const override;
+		void GetPvm(GlobalsUniform& pvm) const override;
 
 	};
 }

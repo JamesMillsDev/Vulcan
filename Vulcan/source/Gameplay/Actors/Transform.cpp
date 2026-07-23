@@ -1,7 +1,6 @@
 #include "Gameplay/Actors/Transform.h"
 
 #include "Maths/Maths.h"
-
 #include "Utility/Collections/HashImpls.h"
 
 using namespace Vulcan;

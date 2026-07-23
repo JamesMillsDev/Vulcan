@@ -6,13 +6,18 @@
 
 #include <vulkan/vulkan.h>
 
-using std::string;
-using glm::mat4;
+#include "Uniforms.h"
+
+#include "Rendering/Camera.h"
 
 struct GLFWwindow;
 
+using std::string;
+using glm::mat4;
+
 namespace Vulcan
 {
+	class MemoryBuffer;
 	class Application;
 	class Camera;
 	class Config;
@@ -49,12 +54,16 @@ namespace Vulcan
 		VkCommandBuffer m_frameCmdBuf;
 		Vulkan* m_vulkan;
 
+		GlobalsUniform m_globalsUniform;
+		TransformUniform m_transforms;
+		MemoryBuffer* m_transformBuffer;
+
 	private:
 		explicit Renderer(Config* config, GLFWwindow* window);
 		~Renderer();
 
 	public:
-		void Render(const Mesh* mesh, Material* material, const mat4& transform) const;
+		void Render(const Mesh* mesh, Material* material, const mat4& transform, uint32 objectIndex) const;
 
 	private:
 		void BeginFrame();

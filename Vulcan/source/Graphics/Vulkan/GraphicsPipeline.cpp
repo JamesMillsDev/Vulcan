@@ -1,7 +1,9 @@
 #include "Graphics/Vulkan/GraphicsPipeline.h"
 
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
-
+#include "Graphics/Uniforms.h"
+#include "Graphics/Rendering/Lighting.h"
+#include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
 #include "Graphics/Rendering/Shader.h"
 #include "Graphics/Vulkan/Vulkan.h"
@@ -14,7 +16,11 @@ bool ShaderConfig::StageComp::operator()(const VkShaderStageFlagBits& lhs, const
 }
 
 GraphicsPipelineConfig::GraphicsPipelineConfig(ShaderConfig shader)
-	: shaderConfig{ std::move(shader) }
+	: shaderConfig{ std::move(shader) }, pushConstantRanges{ {
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.offset = 0,
+			.size = sizeof(MaterialUniform)
+		} }
 {
 
 }
@@ -30,7 +36,7 @@ uint32 GraphicsPipelineConfig::Size() const
 	return shaderConfig.stages.Count();
 }
 
-bool GraphicsPipelineConfig::ContainsStage(VkShaderStageFlagBits stage) const
+bool GraphicsPipelineConfig::ContainsStage(const VkShaderStageFlagBits stage) const
 {
 	return shaderConfig.stages.Contains(stage);
 }
@@ -47,25 +53,27 @@ GraphicsPipeline::~GraphicsPipeline()
 	Destroy();
 }
 
-void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, const VkDeviceAddress pushConstantAddress) const
+void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, uint32 objectIndex) const
 {
+	TArray dynamicOffsets = { static_cast<uint32>(0), static_cast<uint32>(sizeof(TransformUniform)) };
+
 	vkCmdBindDescriptorSets(
-		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, 0, nullptr
+		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, dynamicOffsets.Count(), dynamicOffsets.Data()
 	);
 
 	vkCmdBindPipeline(cmdBuffer, m_bindPoint, m_pipeline);
 
 	vkCmdPushConstants(
-		cmdBuffer, m_pipelineLayout, m_pushConstantStage, 0, sizeof(ProjectionViewModelUniform), &pushConstantAddress
+		cmdBuffer, m_pipelineLayout, m_pushConstantStage, 0, sizeof(uint32), &objectIndex
 	);
 }
 
-void GraphicsPipeline::SetBindPoint(VkPipelineBindPoint bindPoint)
+void GraphicsPipeline::SetBindPoint(const VkPipelineBindPoint bindPoint)
 {
 	m_bindPoint = bindPoint;
 }
 
-void GraphicsPipeline::SetPushConstantStage(VkShaderStageFlagBits stage)
+void GraphicsPipeline::SetPushConstantStage(const VkShaderStageFlagBits stage)
 {
 	m_pushConstantStage = stage;
 }
@@ -73,22 +81,6 @@ void GraphicsPipeline::SetPushConstantStage(VkShaderStageFlagBits stage)
 VkDescriptorSet GraphicsPipeline::GetDescriptorSet() const
 {
 	return m_descriptorSets;
-}
-
-bool GraphicsPipeline::IsLit() const
-{
-	return m_config.shaderConfig.lit;
-}
-
-bool GraphicsPipeline::TryGetTextureBinding(TList<int32>& binding) const
-{
-	if (m_samplerBindings.IsEmpty())
-	{
-		return false;
-	}
-
-	binding = m_samplerBindings;
-	return true;
 }
 
 void GraphicsPipeline::Init(Vulkan* vulkan)
@@ -112,77 +104,106 @@ void GraphicsPipeline::Destroy()
 void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 {
 	VkResult result;
-	TList<DescriptorConfig> descriptors;
 
-	if (m_config.shaderConfig.lit)
+	TArray dslBindings =
 	{
-		descriptors.Add(
-			{
-				.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.count = 1,
-				.stage = VK_SHADER_STAGE_FRAGMENT_BIT
-			}
-		);
-		descriptors.Add(
-			{
-				.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.count = MAX_LIGHT_COUNT,
-				.stage = VK_SHADER_STAGE_FRAGMENT_BIT
-			}
-		);
-	}
-
-	descriptors.Add(
+		VkDescriptorSetLayoutBinding
+		{
+			.binding = 0,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.pImmutableSamplers = nullptr
+		},
+		VkDescriptorSetLayoutBinding
+		{
+			.binding = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.pImmutableSamplers = nullptr
+		},
+		VkDescriptorSetLayoutBinding
+		{
+			.binding = 2,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.pImmutableSamplers = nullptr
+		},
+		VkDescriptorSetLayoutBinding
+		{
+			.binding = 3,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.pImmutableSamplers = nullptr
+		},
+		VkDescriptorSetLayoutBinding
+		{
+			.binding = 4,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = MAX_LIGHT_COUNT,
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.pImmutableSamplers = nullptr
+		},
+		VkDescriptorSetLayoutBinding
+		{
+			.binding = 5,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = UINT16_MAX,
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.pImmutableSamplers = nullptr
+		}
+	};
+	TArray flags =
+	{
+		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
+		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
+		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
+		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
+		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
+		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT }
+	};
+	TArray poolSizes =
+	{
+		VkDescriptorPoolSize
 		{
 			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.count = 1,
-			.stage = VK_SHADER_STAGE_FRAGMENT_BIT
-		}
-	);
-
-	for (const DescriptorConfig& descriptor : m_config.shaderConfig.descriptors)
-	{
-		descriptors.Add(descriptor);
-	}
-
-	TList<VkDescriptorSetLayoutBinding> dslBindings;
-	TList<VkDescriptorBindingFlags> flags;
-	TList<VkDescriptorPoolSize> poolSizes;
-
-	uint32 bindingIndex = 0;
-	for (int32 i = 0; i < static_cast<int32>(descriptors.Count()); ++i)
-	{
-		const DescriptorConfig& descriptor = descriptors[i];
-
-		dslBindings.Add(
-			{
-				.binding = bindingIndex++,
-				.descriptorType = descriptor.type,
-				.descriptorCount = descriptor.count,
-				.stageFlags = descriptor.stage,
-				.pImmutableSamplers = nullptr
-			}
-		);
-
-		flags.Add(VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-		poolSizes.Add(
-			{
-				.type = descriptor.type,
-				.descriptorCount = descriptor.count
-			}
-		);
-
-		if (descriptor.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			.descriptorCount = 1
+		},
+		VkDescriptorPoolSize
 		{
-			m_samplerBindings.Add(i);
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1
+		},
+		VkDescriptorPoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1
+		},
+		VkDescriptorPoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = 1
+		},
+		VkDescriptorPoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = MAX_LIGHT_COUNT
+		},
+		VkDescriptorPoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = UINT16_MAX
 		}
-	}
+	};
 
 	const VkDescriptorSetLayoutBindingFlagsCreateInfo dslFlagsCreateInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
 		.pNext = nullptr,
-		.bindingCount = static_cast<uint32>(flags.Count()),
+		.bindingCount = flags.Count(),
 		.pBindingFlags = flags.Data()
 	};
 
@@ -191,7 +212,7 @@ void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		.pNext = &dslFlagsCreateInfo,
 		.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
-		.bindingCount = static_cast<uint32>(dslBindings.Count()),
+		.bindingCount = dslBindings.Count(),
 		.pBindings = dslBindings.Data()
 	};
 
@@ -207,7 +228,7 @@ void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 		.pNext = nullptr,
 		.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
 		.maxSets = 1,
-		.poolSizeCount = static_cast<uint32>(poolSizes.Count()),
+		.poolSizeCount = poolSizes.Count(),
 		.pPoolSizes = poolSizes.Data()
 	};
 
@@ -217,10 +238,20 @@ void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 		throw Vulkan::VulkanError("Failed to create Descriptor Pool!", result);
 	}
 
+	uint32 dynamicDescriptorCount = { UINT16_MAX };
+
+	VkDescriptorSetVariableDescriptorCountAllocateInfo vdsAllocateInfo =
+	{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,
+		.pNext = nullptr,
+		.descriptorSetCount = 1,
+		.pDescriptorCounts = &dynamicDescriptorCount
+	};
+
 	const VkDescriptorSetAllocateInfo dsAllocateInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.pNext = nullptr,
+		.pNext = &vdsAllocateInfo,
 		.descriptorPool = m_descriptorPool,
 		.descriptorSetCount = 1,
 		.pSetLayouts = &m_descriptorSetLayout

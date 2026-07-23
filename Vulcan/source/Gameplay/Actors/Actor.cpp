@@ -5,7 +5,7 @@
 using namespace Vulcan;
 
 Actor::Actor()
-	: m_transform{ new Transform }
+	: m_world{ nullptr }, m_transform{ new Transform }
 {
 	m_transform->m_owner = this;
 }
@@ -54,6 +54,16 @@ void Actor::DestroyComponent(IComponent* component)
 Transform* Actor::GetTransform() const
 {
 	return m_transform;
+}
+
+World const* Actor::GetWorld() const
+{
+	return m_world;
+}
+
+uint32 Actor::GetObjectIndex() const
+{
+	return m_objectIndex;
 }
 
 void Actor::ApplyComponentListChanges()

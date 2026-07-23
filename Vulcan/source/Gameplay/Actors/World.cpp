@@ -1,22 +1,25 @@
 #include "Gameplay/Actors/World.h"
 
 #include "Gameplay/Actors/Transform.h"
+#include "Graphics/Rendering/Lighting.h"
 
 using namespace Vulcan;
 
 World::World()
-	: m_root{ new Actor }
+	: m_nextObjectIndex{ 0 }, m_root{ new Actor }, m_lighting{ new Lighting }
 {}
 
 World::~World()
 {
 	delete m_root;
+	delete m_lighting;
 }
 
 void World::DestroyActor(Actor* actor)
 {
 	m_lifetimeChanges.Add([this, actor]
 		{
+			m_returnedObjectIndices.push(actor->GetObjectIndex());
 			actor->GetTransform()->SetParent(nullptr);
 
 			actor->EndPlay();
@@ -31,10 +34,17 @@ void World::DestroyActor(Actor* actor)
 		});
 }
 
+Lighting* World::GetLighting() const
+{
+	return m_lighting;
+}
+
 void World::Tick(Actor* actor)
 {
 	if (actor == nullptr)
 	{
+		m_lighting->UpdateBuffers();
+
 		actor = m_root;
 		for (const ActorLifetimeChange& change : m_lifetimeChanges)
 		{
@@ -62,6 +72,8 @@ void World::Render(Actor* actor)
 	if (actor == nullptr)
 	{
 		actor = m_root;
+
+		m_lighting->Dbg_ShowGui();
 	}
 
 	if (actor != m_root)

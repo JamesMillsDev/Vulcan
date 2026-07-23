@@ -178,5 +178,4 @@ namespace Vulcan
 
 		return *this;
 	}
-
 }

@@ -1,7 +1,6 @@
 #include "Window.h"
 
 #include <stdexcept>
-
 #include <GLFW/glfw3.h>
 
 #include "Utility/Config.h"

@@ -2,8 +2,8 @@
 
 #include "Gameplay/Actors/Actor.h"
 #include "Gameplay/Actors/Transform.h"
-
 #include "Graphics/Renderer.h"
+#include "Graphics/Rendering/Material.h"
 
 using namespace Vulcan;
 
@@ -13,7 +13,14 @@ MeshComponent::MeshComponent(Mesh* mesh, Material* material)
 	
 }
 
+Material* MeshComponent::GetMaterial() const
+{
+	return m_material;
+}
+
 void MeshComponent::Render()
 {
-	Renderer::Instance()->Render(m_mesh, m_material, Owner()->GetTransform()->LocalToWorld());
+	Renderer::Instance()->Render(m_mesh, m_material, Owner()->GetTransform()->LocalToWorld(), Owner()->GetObjectIndex());
+
+	m_material->Dbg_ShowGui(); 
 }

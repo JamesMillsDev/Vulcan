@@ -1,7 +1,7 @@
 #include <Application.h>
-#include "DungeonGameInstance.h"
+#include "ExampleGameInstance.h"
 
 int main()
 {
-	return static_cast<int>(Vulcan::Application::Open<DungeonGameInstance>());
+	return static_cast<int>(Vulcan::Application::Open<ExampleGameInstance>());
 }

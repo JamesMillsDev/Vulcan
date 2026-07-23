@@ -11,7 +11,7 @@ using glm::vec3;
 using glm::mat4;
 
 using Vulcan::Camera;
-using Vulcan::ProjectionViewModelUniform;
+using Vulcan::GlobalsUniform;
 
 class FlyCamera : public Camera
 {
@@ -31,7 +31,7 @@ public:
 	FlyCamera(float fov, float near, float far);
 
 public:
-	void GetPvm(ProjectionViewModelUniform& pvm) const override;
+	void GetPvm(GlobalsUniform& pvm) const override;
 	void Tick();
 
 };

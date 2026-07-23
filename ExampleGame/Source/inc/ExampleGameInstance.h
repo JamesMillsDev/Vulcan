@@ -16,7 +16,7 @@ using Vulcan::GameInstance;
 using Vulcan::Mesh;
 using Vulcan::Material;
 
-class DungeonGameInstance final : public GameInstance
+class ExampleGameInstance final : public GameInstance
 {
 private:
 	Actor* m_meshActor;
@@ -26,7 +26,7 @@ private:
 	Mesh* m_mesh;
 
 public:
-	DungeonGameInstance();
+	ExampleGameInstance();
 
 public:
 	void Init() override;

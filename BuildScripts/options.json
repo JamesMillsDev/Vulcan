@@ -1,24 +1,21 @@
 {
-    "project_name": "ExampleGame",
-    "vulkan_sdk": "$VULKAN_SDK",
-    "ktx_sdk": "$KTX_SDK",
-    "shader_extensions": [ "slang" ],
-    "texture_extensions": [ "png", "tga" ],
-    "shader_compiler":
-    {
-        "name": "slangc",
-        "flags": [ "-target", "spirv", "-fvk-use-entrypoint-name" ]
-    },
-    "texture_transcoder":
-    {
-        "name": "ktx"
-    },
-    "directories":
-    {
-        "shaders": "Shaders",
-        "textures": "Textures",
-        "config": "Config",
-        "content": "Content",
-        "solution": "../"
-    }
+  "project_name": "ExampleGame",
+  "vulkan_sdk": "$VULKAN_SDK",
+  "ktx_sdk": "$KTX_SDK",
+  "shader_extensions": [ "slang" ],
+  "texture_extensions": [ "png", "tga" ],
+  "shader_compiler": {
+    "name": "slangc",
+    "flags": [ "-target", "spirv", "-fvk-use-entrypoint-name" ]
+  },
+  "texture_transcoder": {
+    "name": "ktx"
+  },
+  "directories": {
+    "shaders": "Shaders",
+    "textures": "Textures",
+    "config": "Config",
+    "content": "Content",
+    "solution": "../"
+  }
 }

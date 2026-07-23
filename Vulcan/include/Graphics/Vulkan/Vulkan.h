@@ -12,10 +12,11 @@
 #include "Utility/Collections/TList.h"
 #include "Utility/Collections/TMap.h"
 
+struct GLFWwindow;
+
 using std::runtime_error;
 using std::string;
-
-struct GLFWwindow;
+using InitFunction = std::function<void()>;
 
 namespace Vulcan
 {
@@ -27,9 +28,8 @@ namespace Vulcan
 	class MemoryBuffer;
 	class GraphicsPipeline;
 
-	using InitFunction = std::function<void()>;
-
 	constexpr int32 MAX_FRAMES_IN_FLIGHT = 2;
+	constexpr uint32 MAX_VISIBLE_OBJECTS = 10000;
 
 #ifdef _DEBUG
 	constexpr bool ENABLE_VALIDATION_LAYERS = true;
@@ -37,7 +37,7 @@ namespace Vulcan
 	constexpr bool ENABLE_VALIDATION_LAYERS = false;
 #endif
 
-	const TList<const char*> VALIDATION_LAYERS =
+	const TList VALIDATION_LAYERS =
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
@@ -56,11 +56,13 @@ namespace Vulcan
 
 	enum class EUniformBufferIds : uint16
 	{
-		ProjectionView = 0,
+		Globals = 0,
 		SceneLighting = 1,
 		Lights = 2,
-		Material = 3,
-		PushConstant = UINT16_MAX
+		Transforms = 3,
+		Materials = 4,
+		Textures = 5,
+		Max = UINT16_MAX
 	};
 
 	using UniformBufferSet = TMap<uint16, TList<MemoryBuffer*>>;
@@ -68,6 +70,7 @@ namespace Vulcan
 	class Vulkan  // NOLINT(cppcoreguidelines-special-member-functions)
 	{
 		friend Renderer;
+		friend void CheckSwapChain(VkResult result, const string& errorMsg);
 
 	private:
 		static Vulkan* m_instance;
@@ -76,6 +79,7 @@ namespace Vulcan
 		[[nodiscard]] static Vulkan* Instance();
 		DEFINE_ACCESSOR(VkDevice, Device)
 		DEFINE_ACCESSOR(VmaAllocator, Allocator)
+		DEFINE_ACCESSOR(VkPhysicalDeviceProperties, DeviceProperties)
 
 		[[nodiscard]] static bool IsLoaded();
 		[[nodiscard]] static runtime_error VulkanError(const string& message, VkResult result);
@@ -104,6 +108,7 @@ namespace Vulcan
 		VkInstance m_vkInstance;
 		VkDebugUtilsMessengerEXT m_debugMessenger;
 
+		VkPhysicalDeviceProperties m_deviceProperties;
 		VkPhysicalDevice m_physicalDevice;
 		VkDevice m_device;
 		VkQueue m_queue;
@@ -157,5 +162,4 @@ namespace Vulcan
 		void InitAndPushResource(const InitFunction& init, const CleanupFunction& cleanup) const;
 
 	};
-
 }

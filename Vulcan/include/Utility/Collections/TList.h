@@ -74,6 +74,8 @@ namespace Vulcan
 
 	public:
 		void Add(T item);
+		void AddRange(const initializer_list<T>& items);
+
 		void Insert(T item, int64 index);
 
 		void Remove(T item);
@@ -92,6 +94,7 @@ namespace Vulcan
 		T Front() const;
 		T Back() const;
 
+		void SetData(T* data, uint64 length);
 		T* Data() noexcept;
 		const T* Data() const noexcept;
 
@@ -139,33 +142,33 @@ namespace Vulcan
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator::reference TList<T, GROWTH>::Iterator::operator*() const
+	TList<T, GROWTH>::template Iterator::reference TList<T, GROWTH>::Iterator::operator*() const
 	{
 		return *m_ptr;
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator::pointer TList<T, GROWTH>::Iterator::operator->()
+	TList<T, GROWTH>::template Iterator::pointer TList<T, GROWTH>::Iterator::operator->()
 	{
 		return m_ptr;
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator& TList<T, GROWTH>::Iterator::operator++()
+	TList<T, GROWTH>::template Iterator& TList<T, GROWTH>::Iterator::operator++()
 	{
 		++m_ptr;
 		return *this;
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator& TList<T, GROWTH>::Iterator::operator--()
+	TList<T, GROWTH>::template Iterator& TList<T, GROWTH>::Iterator::operator--()
 	{
 		--m_ptr;
 		return *this;
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::Iterator::operator++(int)
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::Iterator::operator++(int)
 	{
 		Iterator tmp = *this;
 		++(*this);
@@ -173,7 +176,7 @@ namespace Vulcan
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::Iterator::operator--(int)
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::Iterator::operator--(int)
 	{
 		Iterator tmp = *this;
 		--(*this);
@@ -193,13 +196,13 @@ namespace Vulcan
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::View::begin() const
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::View::begin() const
 	{
 		return std::ranges::begin(value);
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::View::end() const
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::View::end() const
 	{
 		return std::ranges::end(value);
 	}
@@ -257,6 +260,15 @@ namespace Vulcan
 		}
 
 		m_data[m_count++] = item;
+	}
+
+	template <typename T, int64 GROWTH>
+	void TList<T, GROWTH>::AddRange(const initializer_list<T>& items)
+	{
+		for (const T& item : items)
+		{
+			Add(item);
+		}
 	}
 
 	template <typename T, int64 GROWTH>
@@ -359,6 +371,13 @@ namespace Vulcan
 	}
 
 	template <typename T, int64 GROWTH>
+	void TList<T, GROWTH>::SetData(T* data, uint64 length)
+	{
+		Resize(length);
+		std::memcpy(m_data, data, length);
+	}
+
+	template <typename T, int64 GROWTH>
 	T* TList<T, GROWTH>::Data() noexcept
 	{
 		return m_data;
@@ -385,13 +404,13 @@ namespace Vulcan
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::begin()
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::begin()
 	{
 		return Iterator{ &m_data[0] };
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::end()
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::end()
 	{
 		return Iterator{ &m_data[m_count] };
 	}
@@ -409,13 +428,13 @@ namespace Vulcan
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::begin() const
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::begin() const
 	{
 		return Iterator{ &m_data[0] };
 	}
 
 	template <typename T, int64 GROWTH>
-	typename TList<T, GROWTH>::Iterator TList<T, GROWTH>::end() const
+	TList<T, GROWTH>::template Iterator TList<T, GROWTH>::end() const
 	{
 		return Iterator{ &m_data[m_count] };
 	}

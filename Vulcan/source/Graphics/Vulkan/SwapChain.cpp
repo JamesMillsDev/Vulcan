@@ -3,7 +3,6 @@
 #include <format>
 
 #include "Window.h"
-
 #include "Graphics/Vulkan/Vulkan.h"
 
 using namespace Vulcan;

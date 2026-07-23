@@ -79,7 +79,7 @@ namespace Vulcan
 		 * @param v The value component. (0-1)
 		 * @param a
 		 */
-		static Color HSVToRGB(float h, float s, float v, float a);
+		static Color HSVToRGB(float h, float s, float v, float a = 1.f);
 
 		/**
 		 * @brief Creates a colour in RGB format using HSV values.
@@ -89,7 +89,7 @@ namespace Vulcan
 		 * @param hdr Whether the colour is in the High Definition Range.
 		 * @param a
 		 */
-		static Color HSVToRGB(float h, float s, float v, bool hdr, float a);
+		static Color HSVToRGB(float h, float s, float v, bool hdr, float a = 1.f);
 
 		/** @brief Returns the smaller of two inputs. */
 		static Color Min(const Color& a, const Color& b);

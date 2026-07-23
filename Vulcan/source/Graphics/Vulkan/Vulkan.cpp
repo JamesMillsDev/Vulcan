@@ -1,68 +1,63 @@
 #include "Graphics/Vulkan/Vulkan.h"
 
+#include <format>
 #include <GLFW/glfw3.h>
 
 #define VMA_IMPLEMENTATION
-#include <format>
 #include <vk_mem_alloc.h>
 
 #include "Application.h"
 #include "Window.h"
-
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
-
 #include "Graphics/Uniforms.h"
+#include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Material.h"
-#include "Graphics/Rendering/SceneLightingData.h"
 #include "Graphics/Rendering/Texture.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Swapchain.h"
-
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glfw.h"
 #include "ImGui/imgui_impl_vulkan.h"
-
 #include "Utility/Config.h"
 #include "Utility/Console.h"
 #include "Utility/Version.h"
 
-using namespace Vulcan;
-
 using std::exception;
 
-constexpr uint32 MAX_TEXTURE_DESCRIPTORS = UINT16_MAX;
+using namespace Vulcan;
+
 constexpr int32 UNIFORM_BUFFER_COUNT = 3;
 
-const TArray UNIFORM_DATA
+const TArray UNIFORM_DATA 
 {
 	UniformBufferData
 	{
 		.count = 1,
-		.size = sizeof(ProjectionViewModelUniform),
-		.bufferUsage = VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR,
-		.id = static_cast<uint16>(EUniformBufferIds::ProjectionView)
+		.size = sizeof(GlobalsUniform),
+		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		.id = static_cast<uint16>(EUniformBufferIds::Globals)
 	},
 	UniformBufferData
 	{
 		.count = 1,
-		.size = sizeof(SceneLightingData),
+		.size = sizeof(TransformUniform) * MAX_VISIBLE_OBJECTS,
+		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		.id = static_cast<uint16>(EUniformBufferIds::Transforms)
+	},
+	UniformBufferData
+	{
+		.count = 1,
+		.size = sizeof(SceneLightingUniform),
 		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		.id = static_cast<uint16>(EUniformBufferIds::SceneLighting)
 	},
-	UniformBufferData
+	UniformBufferData 
 	{
 		.count = MAX_LIGHT_COUNT,
 		.size = sizeof(LightUniform),
-		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		.id = static_cast<uint16>(EUniformBufferIds::Lights)
-	},
-	UniformBufferData
-	{
-		.count = 1,
-		.size = sizeof(MaterialUniform),
 		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-		.id = static_cast<uint16>(EUniformBufferIds::Material)
-	},
+		.id = static_cast<uint16>(EUniformBufferIds::Lights)
+	}
 };
 
 namespace
@@ -178,6 +173,16 @@ const VmaAllocator& Vulkan::Allocator()
 const VmaAllocator& Vulkan::GetAllocator() const
 {
 	return m_vmaAllocator;
+}
+
+const VkPhysicalDeviceProperties& Vulkan::DeviceProperties()
+{
+	return m_instance->GetDeviceProperties();
+}
+
+const VkPhysicalDeviceProperties& Vulkan::GetDeviceProperties() const
+{
+	return m_deviceProperties;
 }
 
 bool Vulkan::IsLoaded()
@@ -341,7 +346,7 @@ void Vulkan::EndOneTimeCommand(const VkCommandBuffer& buffer, const VkFence& fen
 
 MemoryBuffer* Vulkan::GetUniformBuffer(const uint16 id, const uint32 index) const
 {
-	return (*m_shaderDataBuffers[m_frameIndex][id])[index];
+	return m_shaderDataBuffers[m_frameIndex][id][index];
 }
 
 MemoryBuffer* Vulkan::GetUniformBuffer(EUniformBufferIds id, const uint32 index) const
@@ -475,6 +480,7 @@ void Vulkan::Init(GLFWwindow* window)
 					.properties = {}
 				};
 				vkGetPhysicalDeviceProperties2(m_physicalDevice, &deviceProperties);
+				m_deviceProperties = deviceProperties.properties;
 
 				// Get all the device's queue families
 				uint32 queueFamilyCount = 0;
@@ -528,6 +534,7 @@ void Vulkan::Init(GLFWwindow* window)
 				enabledVk12Features.runtimeDescriptorArray = true;
 				enabledVk12Features.bufferDeviceAddress = true;
 				enabledVk12Features.descriptorBindingSampledImageUpdateAfterBind = true;
+				enabledVk12Features.descriptorBindingPartiallyBound = true;
 
 				VkPhysicalDeviceVulkan13Features enabledVk13Features{};
 				enabledVk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -809,6 +816,7 @@ void Vulkan::Init(GLFWwindow* window)
 				);
 
 				ImGui::CreateContext();
+				ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 				ImGui_ImplGlfw_InitForVulkan(window, true);
 
@@ -823,7 +831,7 @@ void Vulkan::Init(GLFWwindow* window)
 				initInfo.UseDynamicRendering = true;
 
 				ImGui_ImplVulkan_PipelineInfo pipelineInfo{};
-				pipelineInfo.PipelineRenderingCreateInfo = 
+				pipelineInfo.PipelineRenderingCreateInfo =
 				{
 					.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
 					.pNext = nullptr,
@@ -873,7 +881,7 @@ void Vulkan::RecreateSwapChain()
 
 	const Window* window = Application::GetWindow();
 	m_swapChain->Recreate(window, m_renderCompleteSemaphores);
-	
+
 	vmaDestroyImage(m_vmaAllocator, m_depthImage, m_depthImageAllocation);
 	vkDestroyImageView(m_device, m_depthImageView, nullptr);
 
@@ -980,6 +988,7 @@ VkCommandBuffer Vulkan::BeginFrame()
 	ImGui_ImplGlfw_NewFrame();
 
 	ImGui::NewFrame();
+	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 	return cmdBuf;
 }

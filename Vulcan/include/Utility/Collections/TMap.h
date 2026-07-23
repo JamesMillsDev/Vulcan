@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <cstdint>
 #include <initializer_list>
 #include <iterator>
 #include <ranges>
@@ -153,8 +152,8 @@ namespace Vulcan
 		TMap& operator=(TMap rhs);
 		TMap& operator=(TMap&& rhs) noexcept;
 
-		TMapEntry<KEY, VALUE>& operator[](KEY key);
-		const TMapEntry<KEY, VALUE>& operator[](KEY key) const;
+		VALUE& operator[](KEY key);
+		const VALUE& operator[](KEY key) const;
 
 	};
 
@@ -240,19 +239,19 @@ namespace Vulcan
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::value_type TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator*() const
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator::value_type TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator*() const
 	{
 		return m_current;
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::value_type TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator->() const
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator::value_type TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator->() const
 	{
 		return m_current;
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator& TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator++()
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator& TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator++()
 	{
 		m_current = m_current->next;
 		SkipEmptyBuckets();
@@ -260,7 +259,7 @@ namespace Vulcan
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator++(int)
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator::operator++(int)
 	{
 		Iterator tmp = *this;
 		++(*this);
@@ -280,13 +279,13 @@ namespace Vulcan
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::View::begin() const
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::View::begin() const
 	{
 		return std::ranges::begin(value);
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::View::end() const
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::View::end() const
 	{
 		return std::ranges::end(value);
 	}
@@ -576,13 +575,13 @@ namespace Vulcan
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::begin()
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::begin()
 	{
 		return Iterator{ m_buckets, m_capacity, 0, m_capacity > 0 ? m_buckets[0] : nullptr };
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::end()
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::end()
 	{
 		return Iterator{ m_buckets, m_capacity, m_capacity, nullptr };
 	}
@@ -600,13 +599,13 @@ namespace Vulcan
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::begin() const
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::begin() const
 	{
 		return Iterator{ m_buckets, m_capacity, 0, m_capacity > 0 ? m_buckets[0] : nullptr };
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	typename TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::end() const
+	TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::template Iterator TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::end() const
 	{
 		return Iterator{ m_buckets, m_capacity, m_capacity, nullptr };
 	}
@@ -679,7 +678,7 @@ namespace Vulcan
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	TMapEntry<KEY, VALUE>& TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::operator[](KEY key)
+	VALUE& TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::operator[](KEY key)
 	{
 		const uint64 index = IndexFor(key);
 
@@ -689,11 +688,11 @@ namespace Vulcan
 			entry = entry->next;
 		}
 
-		return *entry;
+		return entry->Value();
 	}
 
 	template <typename KEY, typename VALUE, int64 GROWTH, float LOAD_THRESHOLD>
-	const TMapEntry<KEY, VALUE>& TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::operator[](KEY key) const
+	const VALUE& TMap<KEY, VALUE, GROWTH, LOAD_THRESHOLD>::operator[](KEY key) const
 	{
 		const uint64 index = IndexFor(key);
 
@@ -703,6 +702,6 @@ namespace Vulcan
 			entry = entry->next;
 		}
 
-		return *entry;
+		return entry->Value();
 	}
 }

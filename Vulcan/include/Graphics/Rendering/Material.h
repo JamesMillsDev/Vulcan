@@ -4,6 +4,7 @@
 #include <glm/mat4x4.hpp>
 #include <vulkan/vulkan.h>
 
+#include "Debug.h"
 #include "Object.h"
 
 #include "Graphics/Vulkan/GraphicsPipeline.h"
@@ -11,9 +12,16 @@
 #include "Maths/Color.h"
 
 #include "Utility/Collections/TList.h"
+#include "Utility/Collections/TMap.h"
 
 using glm::mat4;
 using std::string;
+
+#define BASE_COLOR_MAP_NAME "Base Color Map"
+#define NORMAL_MAP_NAME "Normal Map"
+#define ORM_MAP_NAME "ORM Map"
+#define EMISSIVE_MAP_NAME "Emissive Map"
+#define HEIGHT_MAP_NAME "Height Map"
 
 namespace Vulcan
 {
@@ -26,11 +34,18 @@ namespace Vulcan
 	{
 		Color color;
 		Color emissiveTint;
-		Color specularColor;
 
+		float ao;
 		float roughness;
 		float metallic;
-		float specularStrength;
+		float alphaMask;
+		float alphaMaskCutoff;
+
+		int32 baseColorMap;
+		int32 normalMap;
+		int32 ormMap;
+		int32 emissiveMap;
+		int32 heightMap;
 	};
 
 	class Material : public Object
@@ -38,20 +53,24 @@ namespace Vulcan
 		friend class Renderer;
 
 	public:
+	#if _DEBUG
+		bool showDebugWindow = false;
+	#endif
+
 		Color color;
 		Color emissiveTint;
+		float ao;
 		float roughness;
 		float metallic;
-
-		Color specularColor;
-		float specularStrength;
+		float alphaMask;
+		float alphaMaskCutoff;
 
 	private:
 		GraphicsPipelineConfig m_pipelineConfig;
 		GraphicsPipeline* m_pipeline;
 		bool m_shouldUpdateDescriptors;
 
-		TList<Texture*> m_textures;
+		TMap<string, Texture*> m_textures;
 
 	public:
 		explicit Material(const string& shaderPath);
@@ -61,14 +80,21 @@ namespace Vulcan
 	public:
 		[[nodiscard]] uint64 GetHashCode() const override;
 
-		void AddTexture(Texture* texture);
+		void SetTexture(const string& id, Texture* texture);
+
+		DEFINE_DEBUG_FUNCTION(ShowGui)
 
 	private:
-		void Bind(VkCommandBuffer cmdBuffer, const mat4& transform);
+		void Bind(VkCommandBuffer cmdBuffer, uint32 objectIndex);
 		void UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const;
+		void UpdateUniformDescriptor(const MemoryBuffer* buffer, uint32 binding) const;
+
+		void ValidatePipeline();
 
 		void InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Texture* texture, uint32 binding) const;
 		void InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, uint32 binding, uint32 arrayElem = 0) const;
+
+		void AddTextureMaps();
 
 	};
 }

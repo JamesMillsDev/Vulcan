@@ -6,12 +6,12 @@
 #include "Utility/Collections/TList.h"
 #include "Gameplay/Actors/Components/IComponent.h"
 
+using std::function;
+using std::pair;
+
 namespace Vulcan
 {
 	class Transform;
-
-	using std::function;
-	using std::pair;
 
 	using ComponentListChange = function<void()>;
 
@@ -20,7 +20,9 @@ namespace Vulcan
 		friend class World;
 
 	private:
+		World* m_world;
 		Transform* m_transform;
+		uint32 m_objectIndex;
 
 		TList<IComponent*> m_components;
 		TList<ComponentListChange> m_componentListChanges;
@@ -40,9 +42,18 @@ namespace Vulcan
 		template<typename T, typename... ARGS>
 		T* MakeComponent(ARGS... args);
 
+		template<typename T>
+		T* GetComponent();
+
+		template<typename T>
+		TList<T*> GetComponents();
+
 		void DestroyComponent(IComponent* component);
 
 		Transform* GetTransform() const;
+
+		World const* GetWorld() const;
+		uint32 GetObjectIndex() const;
 
 	private:
 		void ApplyComponentListChanges();
@@ -63,6 +74,36 @@ namespace Vulcan
 
 		newComp->m_owner = this;
 		return newComp;
+	}
+
+	template <typename T>
+	T* Actor::GetComponent()
+	{
+		for (IComponent* component : m_components)
+		{
+			if (T* comp = dynamic_cast<T*>(component))
+			{
+				return comp;
+			}
+		}
+
+		return nullptr;
+	}
+
+	template <typename T>
+	TList<T*> Actor::GetComponents()
+	{
+		TList<T*> components;
+
+		for (IComponent* component : m_components)
+		{
+			if (T* comp = dynamic_cast<T*>(component))
+			{
+				components.Add(comp);
+			}
+		}
+
+		return components;
 	}
 
 }

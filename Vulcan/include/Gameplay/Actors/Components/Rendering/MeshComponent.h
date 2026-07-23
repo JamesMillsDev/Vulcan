@@ -17,6 +17,8 @@ namespace Vulcan
 		MeshComponent(Mesh* mesh, Material* material);
 
 	public:
+		Material* GetMaterial() const;
+
 		void Render() override;
 
 	};

@@ -1,13 +1,11 @@
 #include "FlyCamera.h"
 
 #include <GLFW/glfw3.h>
-
 #include <glm/ext/matrix_transform.hpp>
 
 #include "GameTime.h"
 #include "SimpleInput.h"
 #include "Window.h"
-
 #include "Maths/Maths.h"
 
 using Vulcan::Maths;
@@ -20,7 +18,7 @@ FlyCamera::FlyCamera(const float fov, const float near, const float far)
 	m_turnSpeed{ Maths::Radians(180.f) }, m_moveSpeed{ 5.f }, m_lastMouse{ 0.f, 0.f }
 {}
 
-void FlyCamera::GetPvm(ProjectionViewModelUniform& pvm) const
+void FlyCamera::GetPvm(GlobalsUniform& pvm) const
 {
 	Camera::GetPvm(pvm);
 

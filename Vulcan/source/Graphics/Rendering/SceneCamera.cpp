@@ -15,9 +15,10 @@ void SceneCamera::SetTransform(Transform* transform)
 	m_transform = transform;
 }
 
-void SceneCamera::GetPvm(ProjectionViewModelUniform& pvm) const
+void SceneCamera::GetPvm(GlobalsUniform& pvm) const
 {
 	Camera::GetPvm(pvm);
+
 	pvm.view = m_transform->LocalToWorld();
 	pvm.cameraLocation = m_transform->location;
 }

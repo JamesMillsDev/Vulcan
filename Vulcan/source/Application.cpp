@@ -2,17 +2,13 @@
 
 #include <iostream>
 #include <stdexcept>
-
 #include <GLFW/glfw3.h>
 
 #include "GameTime.h"
 #include "Resources.h"
 #include "SimpleInput.h"
-
 #include "Gameplay/Actors/World.h"
-
 #include "Graphics/Renderer.h"
-
 #include "Utility/Config.h"
 
 using namespace Vulcan;

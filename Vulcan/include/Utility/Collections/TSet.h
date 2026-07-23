@@ -122,7 +122,7 @@ namespace Vulcan
 	}
 
 	template <typename T, class PRED>
-	typename TSet<T, PRED>::Node* TSet<T, PRED>::Root() const
+	TSet<T, PRED>::template Node* TSet<T, PRED>::Root() const
 	{
 		return m_root;
 	}

@@ -8,11 +8,21 @@ using glm::vec3;
 
 namespace Vulcan
 {
-	struct ProjectionViewModelUniform
+	struct GlobalsUniform
 	{
 		mat4 proj;
 		mat4 view;
-		mat4 model;
 		vec3 cameraLocation;
+
+		float exposure;
+		float gamma;
+		float prefilteredCubeMipLevels;
+		float scaleIBLAmbient;
 	};
+
+	struct TransformUniform
+	{
+		mat4* values = nullptr;
+	};
+
 }

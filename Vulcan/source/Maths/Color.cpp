@@ -145,39 +145,39 @@ Color Color::HSVToRGB(const float h, const float s, float v, const bool hdr, flo
 	const float x = c * (1.f - Maths::Abs(Maths::FMod(normH, 2.f) - 1.f));
 
 	float normR = 0.f, normG = 0.f, normB = 0.f;
-	if (Maths::IsInRange(h, 0.f, 1.f))
+	if (Maths::IsInRange(normH, 0.f, 1.f))
 	{
 		normR = c;
 		normG = x;
 	}
-	else if (Maths::IsInRange(h, 1.f, 2.f))
+	else if (Maths::IsInRange(normH, 1.f, 2.f))
 	{
 		normR = x;
 		normG = c;
 	}
-	else if (Maths::IsInRange(h, 2.f, 3.f))
+	else if (Maths::IsInRange(normH, 2.f, 3.f))
 	{
 		normG = c;
 		normB = x;
 	}
-	else if (Maths::IsInRange(h, 3.f, 4.f))
+	else if (Maths::IsInRange(normH, 3.f, 4.f))
 	{
 		normG = x;
 		normB = c;
 	}
-	else if (Maths::IsInRange(h, 4.f, 5.f))
+	else if (Maths::IsInRange(normH, 4.f, 5.f))
 	{
 		normR = x;
 		normB = c;
 	}
-	else if (Maths::IsInRange(h, 5.f, 6.f))
+	else if (Maths::IsInRange(normH, 5.f, 6.f))
 	{
 		normR = c;
 		normB = x;
 	}
 
 	// Modify the normalised values by the m term
-	return { normR + m, normG + m, normB + m, a };
+	return Color{ normR + m, normG + m, normB + m, a };
 }
 
 Color Color::Min(const Color& a, const Color& b)

@@ -1,25 +1,34 @@
 #pragma once
 
 #include <functional>
+#include <queue>
 #include <utility>
 
 #include "Gameplay/Actors/Actor.h"
+
 #include "Utility/Collections/TList.h"
 
 using std::function;
 using std::pair;
-
-using ActorLifetimeChange = function<void()>;
+using std::queue;
 
 namespace Vulcan
 {
+	class Lighting;
+
+	using ActorLifetimeChange = function<void()>;
+
 	class World
 	{
 		friend class Application;
 		friend class GameInstance;
 
 	private:
+		uint32 m_nextObjectIndex;
+		queue<uint32> m_returnedObjectIndices;
+
 		Actor* m_root;
+		Lighting* m_lighting;
 
 		TList<ActorLifetimeChange> m_lifetimeChanges;
 
@@ -32,6 +41,8 @@ namespace Vulcan
 		T* MakeActor(ARGS... args);
 
 		void DestroyActor(Actor* actor);
+
+		Lighting* GetLighting() const;
 
 	private:
 		void Tick(Actor* actor = nullptr);
@@ -47,6 +58,19 @@ namespace Vulcan
 		T* actor = new T{ args... };
 		m_lifetimeChanges.Add([this, actor]()
 			{
+				uint32 objectIndex;
+				if (!m_returnedObjectIndices.empty())
+				{
+					objectIndex = m_returnedObjectIndices.front();
+					m_returnedObjectIndices.pop();
+				}
+				else
+				{
+					objectIndex = m_nextObjectIndex++;
+				}
+
+				actor->m_objectIndex = objectIndex;
+				actor->m_world = this;
 				actor->GetTransform()->SetParent(m_root->GetTransform());
 
 				actor->BeginPlay();
@@ -56,5 +80,4 @@ namespace Vulcan
 
 		return actor;
 	}
-
 }

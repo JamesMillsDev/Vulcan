@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vk_mem_alloc.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -23,7 +22,6 @@ namespace Vulcan
 		LocationIndex,
 		NormalIndex,
 		TangentIndex,
-		BiTangentIndex,
 		UvIndex,
 		ColorIndex,
 		VertexAttributeCount
@@ -37,13 +35,11 @@ namespace Vulcan
 
 	public:
 		/** @brief The location of the vertex in model space. */
-		vec3 location;
+		vec4 location;
 		/** @brief The normal of the vertex in model space. */
 		vec4 normal;
 		/** @brief The tangent of the vertex in model space. */
 		vec4 tangent;
-		/** @brief The bitangent of the vertex in model space. */
-		vec4 biTangent;
 
 		/** @brief The first texture coordinate of the vertex. */
 		vec2 uv;
@@ -86,6 +82,8 @@ namespace Vulcan
 
 	public:
 		static Mesh* MakeQuad();
+		static Mesh* MakeCube();
+		static Mesh* MakeSphere(float radius = 1.f, uint8 stacks = 64, uint8 sectors = 64);
 		static Mesh* MakeFromAssimp(const string& file);
 
 	public:

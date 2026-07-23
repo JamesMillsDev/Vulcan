@@ -5,22 +5,63 @@
 #include <stdexcept>
 
 #include "Resources.h"
-
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
+#include "Utility/Console.h"
 #include "Utility/Collections/HashImpls.h"
 
 using namespace Vulcan;
 
+const TArray TEXTURE_EXTENSIONS =
+{
+	".ktx2",
+	".exr"
+};
+
 using std::runtime_error;
 
-uint32 Texture::m_nextId = 0;
-queue<uint32> Texture::m_freeIds;
+int32 Texture::m_nextId = 0;
+queue<int32> Texture::m_freeIds;
 
-Texture::Texture(const string& fileName)
-	: m_file{ fileName }, m_image{ VK_NULL_HANDLE }, m_imageAllocation{ VK_NULL_HANDLE },
-	m_imageView{ VK_NULL_HANDLE }, m_sampler{ VK_NULL_HANDLE }, m_imageExtent{ },
-	m_imageFormat{ }, m_buffer{ VK_NULL_HANDLE }, m_texture{ nullptr }, m_textureDescriptors{ }
+Texture* Texture::LoadFromFile(const string& fileName)
+{
+	bool found = false;
+	ResourceData resourceData = {};
+
+	for (const char* ext : TEXTURE_EXTENSIONS)
+	{
+		try
+		{
+			// Attempt to load the texture from memory
+			const string file = fileName + ext;
+			resourceData = Resources::Find(file);
+			found = true;
+			break;
+		}
+		catch ([[maybe_unused]] runtime_error& error)
+		{
+			continue;
+		}
+	}
+
+	if (!found)
+	{
+		Console::Exception("Texture for filename: '" + fileName + "' not found!");
+		return nullptr;
+	}
+
+	Texture* texture = new Texture;
+	TList<uint8> pixels; 
+	pixels.SetData(resourceData.data, resourceData.length);
+
+	texture->SetPixels(pixels);
+	texture->Apply();
+
+	return texture;
+}
+
+Texture::Texture()
+	: m_vulkanTexture{ nullptr }, m_width{ 0 }, m_height{ 0 }, m_isNormal{ false }, m_isSrgb{ false }, m_format{ }
 {
 	// Get the next available ID (reusing old ones)
 	if (m_freeIds.empty())
@@ -32,15 +73,17 @@ Texture::Texture(const string& fileName)
 		m_id = m_freeIds.front();
 		m_freeIds.pop();
 	}
-
-	CreateBuffer();
 }
 
 Texture::~Texture()
 {
 	m_freeIds.push(m_id);
 
-	DestroyBuffer();
+	if (m_vulkanTexture != nullptr)
+	{
+		m_vulkanTexture->DestroyBuffer();
+		delete m_vulkanTexture;
+	}
 }
 
 uint64 Texture::GetHashCode() const
@@ -50,45 +93,82 @@ uint64 Texture::GetHashCode() const
 
 const VkDescriptorImageInfo& Texture::GetDescriptors() const
 {
-	return m_textureDescriptors;
+	return m_vulkanTexture->m_textureDescriptors;
 }
 
-uint32 Texture::GetId() const
+int32 Texture::GetId() const
 {
 	return m_id;
 }
 
-void Texture::CreateBuffer()
+void Texture::Apply()
 {
-	// Attempt to load the texture from memory
-	const string file = m_file + ".ktx2";
-	ResourceData textureData = Resources::Find(file);
+	m_vulkanTexture = new VulkanTexture{ m_pixels.Data(), static_cast<uint64>(m_pixels.Count()), this };
+}
 
-	if (ktx_error_code_e error = ktxTexture2_CreateFromMemory(textureData.data, textureData.length, KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &m_texture);
+Texture::VulkanTexture::VulkanTexture(const uint8* pixels, const uint64 numPixels, Texture* texture)
+	: m_image{ VK_NULL_HANDLE }, m_imageAllocation{ VK_NULL_HANDLE },
+	m_imageView{ VK_NULL_HANDLE }, m_sampler{ VK_NULL_HANDLE }, m_imageExtent{ },
+	m_imageFormat{  }, m_textureDescriptors{ }, m_texture{ nullptr }, m_buffer{ VK_NULL_HANDLE }
+{
+	CreateBuffer(pixels, numPixels, texture);
+}
+
+void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numPixels, Texture* texture)
+{
+	if (ktx_error_code_e error = ktxTexture2_CreateFromMemory(pixels, numPixels, KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &m_texture);
 		error != KTX_SUCCESS)
 	{
 		throw runtime_error(std::format("Failed to load texture from file! Error Code: {}", static_cast<int32>(error)));
 	}
 
-	ktxTexture2_TranscodeBasis(m_texture, KTX_TTF_BC7_RGBA, KTX_TF_HIGH_QUALITY);
+	ktxTexture2_TranscodeBasis(m_texture, KTX_TTF_BC3_RGBA, KTX_TF_HIGH_QUALITY);
 	// Get the format and extent from the texture
-	m_imageFormat = static_cast<VkFormat>(m_texture->vkFormat);
+	m_imageFormat = static_cast<VkFormat>(m_texture->vkFormat); 
 	m_imageExtent.width = m_texture->baseWidth;
 	m_imageExtent.height = m_texture->baseHeight;
 	m_imageExtent.depth = 1;
 
-	// Generate the create info
-	VkImageCreateInfo imageCreateInfo{};
-	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.format = m_imageFormat;
-	imageCreateInfo.extent = m_imageExtent;
-	imageCreateInfo.mipLevels = m_texture->numLevels;
-	imageCreateInfo.arrayLayers = 1;
-	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	texture->SetFormat(m_imageFormat);
+	texture->SetWidth(m_texture->baseWidth);
+	texture->SetHeight(m_texture->baseHeight);
+
+	// Test if the texture is a normal map by looking at the hash list
+	unsigned int len;
+	void* val;
+	if (const char* key = "KTXwriterScParams"; ktxHashList_FindValue(&m_texture->kvDataHead, key, &len, &val) == KTX_SUCCESS)
+	{
+		if (const string params(static_cast<const char*>(val), len); params.find("--normal-mode") != string::npos)
+		{
+			texture->SetIsNormal(true);
+		}
+	}
+
+	// Look at the transfer function to test if it is srgb
+	if (ktxTexture2_GetTransferFunction_e(m_texture) == KHR_DF_TRANSFER_SRGB)
+	{
+		texture->SetIsSrgb(true);
+	}
+
+	// Generate the creation info
+	VkImageCreateInfo imageCreateInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.imageType = VK_IMAGE_TYPE_2D,
+		.format = m_imageFormat,
+		.extent = m_imageExtent,
+		.mipLevels = m_texture->numLevels,
+		.arrayLayers = 1,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.tiling = VK_IMAGE_TILING_OPTIMAL,
+		.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.queueFamilyIndexCount = 0,
+		.pQueueFamilyIndices = nullptr,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+	};
 
 	VkResult result;
 
@@ -150,17 +230,16 @@ void Texture::CreateBuffer()
 	m_textureDescriptors.sampler = m_sampler;
 	m_textureDescriptors.imageView = m_imageView;
 	m_textureDescriptors.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
-
 }
 
-void Texture::DestroyBuffer() const
+void Texture::VulkanTexture::DestroyBuffer() const
 {
 	vkDestroyImageView(Vulkan::Device(), m_imageView, nullptr);
 	vkDestroySampler(Vulkan::Device(), m_sampler, nullptr);
 	vmaDestroyImage(Vulkan::Allocator(), m_image, m_imageAllocation);
 }
 
-void Texture::TransitionImage() const
+void Texture::VulkanTexture::TransitionImage() const
 {
 	// Begin the one-time command
 	Vulkan* vulkan = Vulkan::Instance();

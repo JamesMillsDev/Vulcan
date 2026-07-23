@@ -88,16 +88,19 @@ ResourceData& Resources::Find(string id)
 	std::ranges::replace(id, '/', '\\');
 
 	// Only mapped files can be loaded
-	assert(m_fileMappings.ContainsKey(id));
+	if (!m_fileMappings.ContainsKey(id))
+	{
+		throw runtime_error("Resource with ID: '" + id + "' does not exist!");
+	}
 
 	// If the resource is already loaded, return the data
 	if (m_resources.ContainsKey(id))
 	{
-		return *m_resources[id];
+		return m_resources[id];
 	}
 
 	// Attempt to open the correct binary file
-	const uint32 resourceFileIndex = *m_fileMappings[id];
+	const uint32 resourceFileIndex = m_fileMappings[id];
 	const string path = m_resourceDir + "/" + m_resourceFileName + std::to_string(resourceFileIndex) + ".res";
 	ifstream resourceFile(
 		path, 
@@ -122,7 +125,7 @@ ResourceData& Resources::Find(string id)
 
 	// Close the file and return the loaded data
 	resourceFile.close();
-	return *m_resources[id];
+	return m_resources[id];
 }
 
 void Resources::Init(Config* config)

@@ -4,24 +4,16 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Graphics/Uniforms.h"
-
 #include "Utility/Collections/TList.h"
+#include "Utility/Collections/TMap.h"
 #include "Utility/Collections/TSet.h"
 
 using std::string;
 
 namespace Vulcan
 {
+	struct MaterialUniform;
 	class Vulkan;
-
-	struct DescriptorConfig
-	{
-		VkDescriptorType type;
-		uint32 count;
-		VkShaderStageFlags stage;
-		VkDescriptorBindingFlags binding = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-	};
 
 	struct ShaderConfig
 	{
@@ -32,10 +24,8 @@ namespace Vulcan
 
 	public:
 		TSet<VkShaderStageFlagBits, StageComp> stages = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT };
-		TList<DescriptorConfig> descriptors = {};
 		string name;
 		string entryPoint = "main";
-		bool lit = true;
 
 	};
 
@@ -88,14 +78,7 @@ namespace Vulcan
 		ColorBlendStateConfig blendState;
 		PrimitiveConfig primitive;
 		MultisamplerConfig multisampler;
-		TList<VkPushConstantRange> pushConstantRanges =
-		{
-			{
-				.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-				.offset = 0,
-				.size = sizeof(ProjectionViewModelUniform)
-			}
-		};
+		TList<VkPushConstantRange> pushConstantRanges;
 
 	public:
 		explicit GraphicsPipelineConfig(ShaderConfig shader);
@@ -115,7 +98,6 @@ namespace Vulcan
 		VkDescriptorPool m_descriptorPool;
 		VkDescriptorSetLayout m_descriptorSetLayout;
 		VkDescriptorSet m_descriptorSets;
-		TList<int32> m_samplerBindings;
 
 		VkPipelineLayout m_pipelineLayout;
 		VkPipeline m_pipeline;
@@ -127,14 +109,11 @@ namespace Vulcan
 		~GraphicsPipeline();
 
 	public:
-		void Bind(VkCommandBuffer cmdBuffer, VkDeviceAddress pushConstantAddress) const;
+		void Bind(VkCommandBuffer cmdBuffer, uint32 objectIndex) const;
 		void SetBindPoint(VkPipelineBindPoint bindPoint);
 		void SetPushConstantStage(VkShaderStageFlagBits stage);
 
 		VkDescriptorSet GetDescriptorSet() const;
-		bool IsLit() const;
-
-		bool TryGetTextureBinding(TList<int32>& binding) const;
 
 	private:
 		void Init(Vulkan* vulkan);

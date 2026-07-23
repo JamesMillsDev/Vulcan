@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <ranges>
+#include <array>
 
 #include "Maths/Alias.h"
 
@@ -115,33 +116,33 @@ namespace Vulcan
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator::reference TArray<T, LENGTH>::Iterator::operator*() const
+	TArray<T, LENGTH>::template Iterator::reference TArray<T, LENGTH>::Iterator::operator*() const
 	{
 		return *m_ptr;
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator::pointer TArray<T, LENGTH>::Iterator::operator->()
+	TArray<T, LENGTH>::template Iterator::pointer TArray<T, LENGTH>::Iterator::operator->()
 	{
 		return m_ptr;
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator& TArray<T, LENGTH>::Iterator::operator++()
+	TArray<T, LENGTH>::template Iterator& TArray<T, LENGTH>::Iterator::operator++()
 	{
 		++m_ptr;
 		return *this;
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator& TArray<T, LENGTH>::Iterator::operator--()
+	TArray<T, LENGTH>::template Iterator& TArray<T, LENGTH>::Iterator::operator--()
 	{
 		--m_ptr;
 		return *this;
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::Iterator::operator++(int)
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::Iterator::operator++(int)
 	{
 		Iterator tmp = *this;
 		++(*this);
@@ -149,7 +150,7 @@ namespace Vulcan
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::Iterator::operator--(int)
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::Iterator::operator--(int)
 	{
 		Iterator tmp = *this;
 		--(*this);
@@ -169,13 +170,13 @@ namespace Vulcan
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::View::begin() const
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::View::begin() const
 	{
 		return std::ranges::begin(value);
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::View::end() const
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::View::end() const
 	{
 		return std::ranges::end(value);
 	}
@@ -245,13 +246,13 @@ namespace Vulcan
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::begin()
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::begin()
 	{
 		return Iterator{ &m_elements[0] };
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::end()
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::end()
 	{
 		return Iterator{ &m_elements[LENGTH] };
 	}
@@ -269,13 +270,13 @@ namespace Vulcan
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::begin() const
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::begin() const
 	{
 		return Iterator{ &m_elements[0] };
 	}
 
 	template <typename T, uint64 LENGTH>
-	typename TArray<T, LENGTH>::Iterator TArray<T, LENGTH>::end() const
+	TArray<T, LENGTH>::template Iterator TArray<T, LENGTH>::end() const
 	{
 		return Iterator{ &m_elements[LENGTH] };
 	}

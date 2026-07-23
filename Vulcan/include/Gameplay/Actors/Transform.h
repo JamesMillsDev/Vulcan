@@ -15,6 +15,7 @@ using glm::vec3;
 namespace Vulcan
 {
 	class Actor;
+
 	using IterationFunc = std::function<void(class Transform*, int)>;
 
 	class Transform : public Object
