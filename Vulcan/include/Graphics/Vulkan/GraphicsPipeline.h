@@ -78,7 +78,6 @@ namespace Vulcan
 		ColorBlendStateConfig blendState;
 		PrimitiveConfig primitive;
 		MultisamplerConfig multisampler;
-		TList<VkPushConstantRange> pushConstantRanges;
 
 	public:
 		explicit GraphicsPipelineConfig(ShaderConfig shader);
@@ -102,7 +101,6 @@ namespace Vulcan
 		VkPipelineLayout m_pipelineLayout;
 		VkPipeline m_pipeline;
 		VkPipelineBindPoint m_bindPoint;
-		VkShaderStageFlagBits m_pushConstantStage;
 
 	public:
 		explicit GraphicsPipeline(GraphicsPipelineConfig config);
@@ -111,7 +109,6 @@ namespace Vulcan
 	public:
 		void Bind(VkCommandBuffer cmdBuffer, uint32 objectIndex) const;
 		void SetBindPoint(VkPipelineBindPoint bindPoint);
-		void SetPushConstantStage(VkShaderStageFlagBits stage);
 
 		VkDescriptorSet GetDescriptorSet() const;
 

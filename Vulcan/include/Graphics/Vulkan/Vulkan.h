@@ -80,6 +80,7 @@ namespace Vulcan
 		DEFINE_ACCESSOR(VkDevice, Device)
 		DEFINE_ACCESSOR(VmaAllocator, Allocator)
 		DEFINE_ACCESSOR(VkPhysicalDeviceProperties, DeviceProperties)
+		DEFINE_ACCESSOR(uint64, DynamicAlignment)
 
 		[[nodiscard]] static bool IsLoaded();
 		[[nodiscard]] static runtime_error VulkanError(const string& message, VkResult result);
@@ -133,6 +134,7 @@ namespace Vulcan
 
 		uint32 m_frameIndex;
 		uint32 m_imageIndex;
+		uint64 m_dynamicAlignment;
 
 		VkDescriptorPool m_imguiPool;
 

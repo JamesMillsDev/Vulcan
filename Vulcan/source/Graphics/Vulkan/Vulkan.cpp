@@ -185,6 +185,16 @@ const VkPhysicalDeviceProperties& Vulkan::GetDeviceProperties() const
 	return m_deviceProperties;
 }
 
+const uint64& Vulkan::DynamicAlignment()
+{
+	return m_instance->GetDynamicAlignment();
+}
+
+const uint64& Vulkan::GetDynamicAlignment() const
+{
+	return m_dynamicAlignment;
+}
+
 bool Vulkan::IsLoaded()
 {
 	return m_instance != nullptr && m_instance->m_loaded;
@@ -258,8 +268,8 @@ void Vulkan::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 }
 
 Vulkan::Vulkan(Config* config, GLFWwindow* window)
-	: m_resourceStack{ new ResourceStack }, m_loaded{ false }, m_frameIndex{ 0 },
-	m_imageIndex{ 0 }, recreateSwapChain{ false }
+	: recreateSwapChain{ false }, m_resourceStack{ new ResourceStack }, m_loaded{ false },
+	m_frameIndex{ 0 }, m_imageIndex{ 0 }, m_dynamicAlignment{ 0 }
 {
 	m_appName = config->Get<string>("Application.Title");
 	m_appVersion = new Version{ "Application.Version", config };
@@ -481,6 +491,13 @@ void Vulkan::Init(GLFWwindow* window)
 				};
 				vkGetPhysicalDeviceProperties2(m_physicalDevice, &deviceProperties);
 				m_deviceProperties = deviceProperties.properties;
+
+				const uint64 minUboAlignment = m_deviceProperties.limits.minUniformBufferOffsetAlignment;
+				m_dynamicAlignment = sizeof(TransformUniform);
+				if (minUboAlignment > 0)
+				{
+					m_dynamicAlignment = (m_dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
+				}
 
 				// Get all the device's queue families
 				uint32 queueFamilyCount = 0;

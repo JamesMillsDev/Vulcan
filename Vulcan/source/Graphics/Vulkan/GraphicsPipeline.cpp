@@ -1,7 +1,6 @@
 #include "Graphics/Vulkan/GraphicsPipeline.h"
 
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
-#include "Graphics/Uniforms.h"
 #include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
@@ -16,11 +15,7 @@ bool ShaderConfig::StageComp::operator()(const VkShaderStageFlagBits& lhs, const
 }
 
 GraphicsPipelineConfig::GraphicsPipelineConfig(ShaderConfig shader)
-	: shaderConfig{ std::move(shader) }, pushConstantRanges{ {
-			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-			.offset = 0,
-			.size = sizeof(MaterialUniform)
-		} }
+	: shaderConfig{ std::move(shader) }
 {
 
 }
@@ -42,8 +37,7 @@ bool GraphicsPipelineConfig::ContainsStage(const VkShaderStageFlagBits stage) co
 }
 
 GraphicsPipeline::GraphicsPipeline(GraphicsPipelineConfig config) :
-	m_config{ std::move(config) }, m_bindPoint{ VK_PIPELINE_BIND_POINT_GRAPHICS },
-	m_pushConstantStage{ VK_SHADER_STAGE_ALL_GRAPHICS }
+	m_config{ std::move(config) }, m_bindPoint{ VK_PIPELINE_BIND_POINT_GRAPHICS }
 {
 	Init(Vulkan::Instance());
 }
@@ -53,29 +47,20 @@ GraphicsPipeline::~GraphicsPipeline()
 	Destroy();
 }
 
-void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, uint32 objectIndex) const
+void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex) const
 {
-	TArray dynamicOffsets = { static_cast<uint32>(0), static_cast<uint32>(sizeof(TransformUniform)) };
+	const uint32 dynamicOffset = objectIndex * static_cast<uint32>(Vulkan::DynamicAlignment());
 
 	vkCmdBindDescriptorSets(
-		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, dynamicOffsets.Count(), dynamicOffsets.Data()
+		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, 1, &dynamicOffset
 	);
 
 	vkCmdBindPipeline(cmdBuffer, m_bindPoint, m_pipeline);
-
-	vkCmdPushConstants(
-		cmdBuffer, m_pipelineLayout, m_pushConstantStage, 0, sizeof(uint32), &objectIndex
-	);
 }
 
 void GraphicsPipeline::SetBindPoint(const VkPipelineBindPoint bindPoint)
 {
 	m_bindPoint = bindPoint;
-}
-
-void GraphicsPipeline::SetPushConstantStage(const VkShaderStageFlagBits stage)
-{
-	m_pushConstantStage = stage;
 }
 
 VkDescriptorSet GraphicsPipeline::GetDescriptorSet() const
@@ -275,8 +260,8 @@ void GraphicsPipeline::InitPipeline(Vulkan* vulkan)
 		.flags = 0,
 		.setLayoutCount = 1,
 		.pSetLayouts = &m_descriptorSetLayout,
-		.pushConstantRangeCount = static_cast<uint32>(m_config.pushConstantRanges.size()),
-		.pPushConstantRanges = m_config.pushConstantRanges.Data()
+		.pushConstantRangeCount = 0,
+		.pPushConstantRanges = nullptr
 	};
 
 	if (result = vkCreatePipelineLayout(vulkan->GetDevice(), &plCreateInfo, nullptr, &m_pipelineLayout);

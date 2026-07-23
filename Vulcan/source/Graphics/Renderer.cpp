@@ -27,6 +27,15 @@ void* alignedAlloc(size_t size, size_t alignment)
 	return data;
 }
 
+void alignedFree(void* data)
+{
+#if	defined(_MSC_VER) || defined(__MINGW32__)
+	_aligned_free(data);
+#else
+	free(data);
+#endif
+}
+
 Renderer* Renderer::Instance()
 {
 	return m_instance;
@@ -87,25 +96,25 @@ Renderer::Renderer(Config* config, GLFWwindow* window)
 
 	m_vulkan = Vulkan::Instance();
 
-	const uint64 minUboAlignment = m_vulkan->GetDeviceProperties().limits.minUniformBufferOffsetAlignment;
-	uint64 dynamicAlignment = sizeof(TransformUniform);
-	if (minUboAlignment > 0)
-	{
-		dynamicAlignment = (dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
-	}
-
-	const uint64 bufferSize = MAX_VISIBLE_OBJECTS * dynamicAlignment;
-	m_transforms.values = static_cast<mat4*>(alignedAlloc(bufferSize, dynamicAlignment));
+	const uint64 bufferSize = MAX_VISIBLE_OBJECTS * m_vulkan->GetDynamicAlignment();
+	m_transforms.values = static_cast<mat4*>(alignedAlloc(bufferSize, m_vulkan->GetDynamicAlignment()));
 	m_transformBuffer = new MemoryBuffer{ bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_vulkan, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT };
+
+	m_transformBuffer->Fill(&m_transforms);
 }
 
 Renderer::~Renderer()
 {
+	alignedFree(m_transforms.values);
+
 	DestroyVulkan();
 }
 
 void Renderer::Render(const Mesh* mesh, Material* material, const mat4& transform, const uint32 objectIndex) const
 {
+	m_transforms.values[objectIndex] = transform;
+	m_transformBuffer->Fill(&m_transforms);
+
 	material->Bind(m_frameCmdBuf, objectIndex);
 	mesh->Render(m_frameCmdBuf);
 }
