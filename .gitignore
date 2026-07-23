@@ -1,0 +1,12 @@
+.vs/
+.idea/
+3dengine.*
+Build/
+Intermediate/
+*.user
+*.spv
+*/__pycache__
+*/Resources/
+*/.vscode/
+*.ktx2
+out/
