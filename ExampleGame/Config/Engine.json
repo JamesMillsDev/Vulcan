@@ -1,0 +1,25 @@
+{
+  "Application": {
+    "Title": "Example Game",
+    "Version": [ 0, 0, 1 ]
+  },
+  "Window": {
+    "Width": 1080,
+    "Height": 720,
+    "ClrColor": {
+      "r": 63.75,
+      "g": 63.75,
+      "b": 63.75,
+      "a": 255
+    },
+    "Resizable": true
+  },
+  "Engine": {
+    "Title": "vulcan",
+    "Version": [ 0, 0, 1 ],
+    "Content": {
+      "Directory": "Resources",
+      "FileName": "Resources"
+    }
+  }
+}

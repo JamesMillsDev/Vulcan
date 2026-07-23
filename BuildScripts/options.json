@@ -1,0 +1,26 @@
+{
+    "project_name": "dungeon-generator",
+    "vulkan_sdk": "$VULKAN_SDK",
+    "ktx_sdk": "$KTX_SDK",
+    "shader_extensions": [ "slang" ],
+    "texture_extensions": [ "png", "tga" ],
+    "shader_compiler":
+    {
+        "name": "slangc",
+        "flags": [ "-target", "spirv", "-fvk-use-entrypoint-name" ]
+    },
+    "texture_transcoder":
+    {
+        "name": "ktx",
+        "flags": [ "--format", "R8G8B8A8_SRGB", "--encode", "basis-lz", "--assign-tf", "srgb" ]
+    },
+    "directories":
+    {
+        "shaders": "Shaders",
+        "textures": "Textures",
+        "config": "Config",
+        "content": "Content",
+        "dlls": "Dependencies/native/",
+        "solution": "../"
+    }
+}
