@@ -7,35 +7,38 @@
 
 using std::string;
 
-class Window;
-
-class SwapChain
+namespace Vulcan
 {
-	friend class Vulkan;
+	class Window;
 
-private:
-	VkSwapchainKHR m_swapChain;
-	TList<VkImage> m_swapChainImages;
-	TList<VkImageView> m_swapChainImageViews;
+	class SwapChain
+	{
+		friend class Vulkan;
 
-	VkPhysicalDevice m_gpu;
-	VkDevice m_device;
-	VkSurfaceKHR m_surface;
+	private:
+		VkSwapchainKHR m_swapChain;
+		TList<VkImage> m_swapChainImages;
+		TList<VkImageView> m_swapChainImageViews;
 
-	VkFormat m_format;
+		VkPhysicalDevice m_gpu;
+		VkDevice m_device;
+		VkSurfaceKHR m_surface;
 
-private:
-	SwapChain(const Window* window, VkPhysicalDevice gpu, VkDevice device, VkSurfaceKHR surface);
-	~SwapChain();
+		VkFormat m_format;
 
-private:
-	void Create(const Window* window);
-	void Recreate(const Window* window, TList<VkSemaphore>& renderCompleteSemaphores);
+	private:
+		SwapChain(const Window* window, VkPhysicalDevice gpu, VkDevice device, VkSurfaceKHR surface);
+		~SwapChain();
 
-	VkResult AcquireNextImage(uint32* imgIndex, VkSemaphore imgAcquiredSemaphore) const;
-	VkImage GetImage(uint32 index) const;
-	VkImageView GetImageView(uint32 index) const;
+	private:
+		void Create(const Window* window);
+		void Recreate(const Window* window, TList<VkSemaphore>& renderCompleteSemaphores);
 
-	VkSwapchainKHR* GetSwapChain();
+		VkResult AcquireNextImage(uint32* imgIndex, VkSemaphore imgAcquiredSemaphore) const;
+		VkImage GetImage(uint32 index) const;
+		VkImageView GetImageView(uint32 index) const;
 
-};
+		VkSwapchainKHR* GetSwapChain();
+
+	};
+}

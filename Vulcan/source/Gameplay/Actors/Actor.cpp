@@ -2,6 +2,8 @@
 
 #include "Gameplay/Actors/Transform.h"
 
+using namespace Vulcan;
+
 Actor::Actor()
 	: m_transform{ new Transform }
 {

@@ -2,24 +2,28 @@
 
 #include "Gameplay/Actors/Components/IComponent.h"
 
-class SceneCamera;
-class Window;
-
-class CameraComponent : public IComponent
+namespace Vulcan
 {
-	friend class Renderer;
+	class SceneCamera;
+	class Window;
 
-public:
-	SceneCamera* camera;
+	class CameraComponent : public IComponent
+	{
+		friend class Renderer;
 
-private:
-	Window* m_window;
+	public:
+		SceneCamera* camera;
 
-public:
-	CameraComponent(float fovY, float nearPlane, float farPlane);
-	~CameraComponent() override;
+	private:
+		Window* m_window;
 
-public:
-	void BeginPlay() override;
+	public:
+		CameraComponent(float fovY, float nearPlane, float farPlane);
+		~CameraComponent() override;
 
-};
+	public:
+		void BeginPlay() override;
+
+	};
+
+}

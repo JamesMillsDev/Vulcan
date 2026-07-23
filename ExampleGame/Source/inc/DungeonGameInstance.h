@@ -2,10 +2,19 @@
 
 #include <Gameplay/GameInstance.h>
 
-class Actor;
+namespace Vulcan
+{
+	class Actor;
+	class Mesh;
+	class Material;
+}
+
 class FlyCamera;
-class Mesh;
-class Material;
+
+using Vulcan::Actor;
+using Vulcan::GameInstance;
+using Vulcan::Mesh;
+using Vulcan::Material;
 
 class DungeonGameInstance final : public GameInstance
 {

@@ -13,6 +13,8 @@
 
 #include "Utility/Collections/HashImpls.h"
 
+using namespace Vulcan;
+
 Material::Material(const string& shaderPath) :
 	color{ 0xffffffff }, emissiveTint{ 0x00000000 }, roughness{ 0 }, metallic{ 0 },
 	specularColor{ Color::WHITE }, specularStrength{ .5f }, m_pipelineConfig{ shaderPath },

@@ -2,6 +2,8 @@
 
 #include "Gameplay/Actors/World.h"
 
+using namespace Vulcan;
+
 GameInstance::GameInstance()
 // TODO: Support levels instead of worlds
 	: m_world{ new World }

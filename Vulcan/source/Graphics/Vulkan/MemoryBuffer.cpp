@@ -2,6 +2,8 @@
 
 #include "Graphics/Vulkan/Vulkan.h"
 
+using namespace Vulcan;
+
 MemoryBuffer::MemoryBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, Vulkan* vulkan)
 	: m_size{ size }, m_buffer{ VK_NULL_HANDLE }, m_allocation{ VK_NULL_HANDLE },
 	m_usage{ usage }, m_deviceAddress{ 0 }

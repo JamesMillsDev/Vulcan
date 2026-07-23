@@ -4,32 +4,35 @@
 #include "Maths/Alias.h"
 #include "Maths/Color.h"
 
-constexpr int MAX_LIGHT_COUNT = 8;
-
-struct LightUniform
+namespace Vulcan
 {
-	vec3 location;
-	vec3 direction;
-	Color color;
-	int32 type;
-};
+	constexpr int MAX_LIGHT_COUNT = 8;
 
-class LightComponent : public IComponent
-{
-public:
-	enum class EType : uint8
+	struct LightUniform
 	{
-		Directional,
-		Point,
-		Spot
+		vec3 location;
+		vec3 direction;
+		Color color;
+		int32 type;
 	};
 
-public:
-	EType type;
-	float intensity;
-	Color color;
+	class LightComponent : public IComponent
+	{
+	public:
+		enum class EType : uint8
+		{
+			Directional,
+			Point,
+			Spot
+		};
 
-public:
-	LightComponent();
+	public:
+		EType type;
+		float intensity;
+		Color color;
 
-};
+	public:
+		LightComponent();
+
+	};
+}

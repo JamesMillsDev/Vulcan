@@ -6,56 +6,60 @@
 
 #include <vulkan/vulkan.h>
 
-class Application;
-class Camera;
-class Config;
-struct GLFWwindow;
-struct GraphicsPipelineConfig;
-class Material;
-class Mesh;
-class Vulkan;
-
 using std::string;
 using glm::mat4;
 
-class Renderer
+struct GLFWwindow;
+
+namespace Vulcan
 {
-	friend Application;
+	class Application;
+	class Camera;
+	class Config;
+	struct GraphicsPipelineConfig;
+	class Material;
+	class Mesh;
+	class Vulkan;
 
-private:
-	static Renderer* m_instance;
-	static Camera* m_currentCamera;
+	class Renderer
+	{
+		friend Application;
 
-public:
-	static Renderer* Instance();
-	[[nodiscard]] static bool IsValid();
+	private:
+		static Renderer* m_instance;
+		static Camera* m_currentCamera;
 
-	static Camera* GetCurrentCamera();
-	static void SetCurrent(Camera* newCurrent);
+	public:
+		static Renderer* Instance();
+		[[nodiscard]] static bool IsValid();
 
-private:
-	static void Create(Config* config, GLFWwindow* window);
-	static void Destroy();
+		static Camera* GetCurrentCamera();
+		static void SetCurrent(Camera* newCurrent);
 
-	static void InitVulkan(Config* config, GLFWwindow* window);
-	static void DestroyVulkan();
+	private:
+		static void Create(Config* config, GLFWwindow* window);
+		static void Destroy();
 
-	static void WaitIdle();
+		static void InitVulkan(Config* config, GLFWwindow* window);
+		static void DestroyVulkan();
 
-private:
-	VkCommandBuffer m_frameCmdBuf;
-	Vulkan* m_vulkan;
+		static void WaitIdle();
 
-private:
-	explicit Renderer(Config* config, GLFWwindow* window);
-	~Renderer();
+	private:
+		VkCommandBuffer m_frameCmdBuf;
+		Vulkan* m_vulkan;
 
-public:
-	void Render(const Mesh* mesh, Material* material, const mat4& transform) const;
-	
-private:
-	void BeginFrame();
-	void EndFrame();
+	private:
+		explicit Renderer(Config* config, GLFWwindow* window);
+		~Renderer();
 
-};
+	public:
+		void Render(const Mesh* mesh, Material* material, const mat4& transform) const;
+
+	private:
+		void BeginFrame();
+		void EndFrame();
+
+	};
+}
 

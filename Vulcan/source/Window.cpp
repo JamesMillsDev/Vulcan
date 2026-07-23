@@ -6,6 +6,8 @@
 
 #include "Utility/Config.h"
 
+using namespace Vulcan;
+
 using std::runtime_error;
 
 Window::Window(Config* config)

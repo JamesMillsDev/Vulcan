@@ -2,6 +2,8 @@
 
 #include "Gameplay/Actors/Transform.h"
 
+using namespace Vulcan;
+
 SceneCamera::SceneCamera(const float fov, const float near, const float far)
 	: Camera{ fov, near, far }, m_transform{ nullptr }
 {

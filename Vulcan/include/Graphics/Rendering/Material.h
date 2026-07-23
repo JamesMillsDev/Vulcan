@@ -12,60 +12,63 @@
 
 #include "Utility/Collections/TList.h"
 
-class MemoryBuffer;
-struct ShaderConfig;
-class GraphicsPipeline;
-class Texture;
-
 using glm::mat4;
 using std::string;
 
-struct MaterialUniform
+namespace Vulcan
 {
-	Color color;
-	Color emissiveTint;
-	Color specularColor;
+	class MemoryBuffer;
+	struct ShaderConfig;
+	class GraphicsPipeline;
+	class Texture;
 
-	float roughness;
-	float metallic;
-	float specularStrength;
-};
+	struct MaterialUniform
+	{
+		Color color;
+		Color emissiveTint;
+		Color specularColor;
 
-class Material : public Object
-{
-	friend class Renderer;
-		
-public:
-	Color color;
-	Color emissiveTint;
-	float roughness;
-	float metallic;
+		float roughness;
+		float metallic;
+		float specularStrength;
+	};
 
-	Color specularColor;
-	float specularStrength;
+	class Material : public Object
+	{
+		friend class Renderer;
 
-private:
-	GraphicsPipelineConfig m_pipelineConfig;
-	GraphicsPipeline* m_pipeline;
-	bool m_shouldUpdateDescriptors;
+	public:
+		Color color;
+		Color emissiveTint;
+		float roughness;
+		float metallic;
 
-	TList<Texture*> m_textures;
+		Color specularColor;
+		float specularStrength;
 
-public:
-	explicit Material(const string& shaderPath);
-	explicit Material(const ShaderConfig& shaderConfig);
-	~Material() override;
+	private:
+		GraphicsPipelineConfig m_pipelineConfig;
+		GraphicsPipeline* m_pipeline;
+		bool m_shouldUpdateDescriptors;
 
-public:
-	[[nodiscard]] uint64 GetHashCode() const override;
+		TList<Texture*> m_textures;
 
-	void AddTexture(Texture* texture);
+	public:
+		explicit Material(const string& shaderPath);
+		explicit Material(const ShaderConfig& shaderConfig);
+		~Material() override;
 
-private:
-	void Bind(VkCommandBuffer cmdBuffer, const mat4& transform);
-	void UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const;
+	public:
+		[[nodiscard]] uint64 GetHashCode() const override;
 
-	void InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Texture* texture, uint32 binding) const;
-	void InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, uint32 binding, uint32 arrayElem = 0) const;
+		void AddTexture(Texture* texture);
 
-};
+	private:
+		void Bind(VkCommandBuffer cmdBuffer, const mat4& transform);
+		void UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const;
+
+		void InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Texture* texture, uint32 binding) const;
+		void InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, uint32 binding, uint32 arrayElem = 0) const;
+
+	};
+}

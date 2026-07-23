@@ -2,6 +2,8 @@
 
 #include "Gameplay/Actors/Transform.h"
 
+using namespace Vulcan;
+
 World::World()
 	: m_root{ new Actor }
 {}

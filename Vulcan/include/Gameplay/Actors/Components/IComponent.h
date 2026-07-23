@@ -1,39 +1,42 @@
 #pragma once
 
-class Actor;
-
-class IComponent
+namespace Vulcan
 {
-	friend Actor;
-	friend class World;
+	class Actor;
 
-private:
-	Actor* m_owner;
-
-protected:
-	IComponent()
-		: m_owner{ nullptr }
-	{}
-
-	virtual ~IComponent() = default;
-
-public:
-	Actor* Owner() const
+	class IComponent
 	{
-		return m_owner;
-	}
+		friend Actor;
+		friend class World;
 
-public:
-	virtual void BeginPlay()
-	{}
+	private:
+		Actor* m_owner;
 
-	virtual void Tick()
-	{}
+	protected:
+		IComponent()
+			: m_owner{ nullptr }
+		{}
 
-	virtual void Render()
-	{}
+		virtual ~IComponent() = default;
 
-	virtual void EndPlay()
-	{}
+	public:
+		Actor* Owner() const
+		{
+			return m_owner;
+		}
 
-};
+	public:
+		virtual void BeginPlay()
+		{}
+
+		virtual void Tick()
+		{}
+
+		virtual void Render()
+		{}
+
+		virtual void EndPlay()
+		{}
+
+	};
+}

@@ -2,19 +2,22 @@
 
 #include "Gameplay/Actors/Components/IComponent.h"
 
-class Material;
-class Mesh;
-
-class MeshComponent final : public IComponent
+namespace Vulcan
 {
-private:
-	Mesh* m_mesh;
-	Material* m_material;
+	class Material;
+	class Mesh;
 
-public:
-	MeshComponent(Mesh* mesh, Material* material);
+	class MeshComponent final : public IComponent
+	{
+	private:
+		Mesh* m_mesh;
+		Material* m_material;
 
-public:
-	void Render() override;
+	public:
+		MeshComponent(Mesh* mesh, Material* material);
 
-};
+	public:
+		void Render() override;
+
+	};
+}

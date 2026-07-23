@@ -6,6 +6,8 @@
 
 #include "Graphics/Vulkan/Vulkan.h"
 
+using namespace Vulcan;
+
 static void Try(const VkResult result, const string& errorMsg)  // NOLINT(misc-use-anonymous-namespace)
 {
 	if (result != VK_SUCCESS)

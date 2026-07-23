@@ -6,10 +6,13 @@
 using glm::mat4;
 using glm::vec3;
 
-struct ProjectionViewModelUniform
+namespace Vulcan
 {
-	mat4 proj;
-	mat4 view;
-	mat4 model;
-	vec3 cameraLocation;
-};
+	struct ProjectionViewModelUniform
+	{
+		mat4 proj;
+		mat4 view;
+		mat4 model;
+		vec3 cameraLocation;
+	};
+}

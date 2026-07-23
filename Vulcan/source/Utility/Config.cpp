@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <fstream>
 
+using namespace Vulcan;
+
 using std::ifstream;
 using std::filesystem::path;
 

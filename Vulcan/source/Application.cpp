@@ -15,6 +15,8 @@
 
 #include "Utility/Config.h"
 
+using namespace Vulcan;
+
 using std::runtime_error;
 
 Application* Application::m_instance = nullptr;

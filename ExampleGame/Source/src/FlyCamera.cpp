@@ -10,7 +10,10 @@
 
 #include "Maths/Maths.h"
 
-class SimpleInput;
+using Vulcan::Maths;
+using Vulcan::SimpleInput;
+using Vulcan::EInputCodes;
+using Vulcan::GameTime;
 
 FlyCamera::FlyCamera(const float fov, const float near, const float far)
 	: Camera{ fov, near, far }, location{ 0.f, 0.f, 0.f }, m_yaw{ 0 }, m_pitch{ 0 },
@@ -37,12 +40,12 @@ void FlyCamera::Tick()
 {
 	SimpleInput* input = SimpleInput::Instance();
 
-	if (input->WasMouseButtonReleased(MouseButtonRight))
+	if (input->WasMouseButtonReleased(EInputCodes::MouseButtonRight))
 	{
 		glfwSetInputMode(m_window->GlfwHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 
-	if (!input->IsMouseButtonDown(MouseButtonRight))
+	if (!input->IsMouseButtonDown(EInputCodes::MouseButtonRight))
 	{
 		return;
 	}
@@ -51,7 +54,7 @@ void FlyCamera::Tick()
 	const float mx = input->GetMouseX();
 	const float my = input->GetMouseY();
 
-	if (input->WasMouseButtonPressed(MouseButtonRight))
+	if (input->WasMouseButtonPressed(EInputCodes::MouseButtonRight))
 	{
 		m_lastMouse = vec2{ mx, my };
 		glfwSetInputMode(m_window->GlfwHandle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -69,38 +72,38 @@ void FlyCamera::Tick()
 	constexpr vec3 up{ 0.f, 1.f, 0.f };
 
 	// We will use WASD to move and the Q & E to go up and down
-	if (input->IsKeyDown(KeyW))
+	if (input->IsKeyDown(EInputCodes::KeyW))
 	{
 		location += forward * GameTime::DeltaTime() * m_moveSpeed;
 	}
 
-	if (input->IsKeyDown(KeyS))
+	if (input->IsKeyDown(EInputCodes::KeyS))
 	{
 		location -= forward * GameTime::DeltaTime() * m_moveSpeed;
 	}
 
-	if (input->IsKeyDown(KeyA))
+	if (input->IsKeyDown(EInputCodes::KeyA))
 	{
 		location += right * GameTime::DeltaTime() * m_moveSpeed;
 	}
 
-	if (input->IsKeyDown(KeyD))
+	if (input->IsKeyDown(EInputCodes::KeyD))
 	{
 		location -= right * GameTime::DeltaTime() * m_moveSpeed;
 	}
 
-	if (input->IsKeyDown(KeyQ))
+	if (input->IsKeyDown(EInputCodes::KeyQ))
 	{
 		location -= up * GameTime::DeltaTime() * m_moveSpeed;
 	}
 
-	if (input->IsKeyDown(KeyE))
+	if (input->IsKeyDown(EInputCodes::KeyE))
 	{
 		location += up * GameTime::DeltaTime() * m_moveSpeed;
 	}
 
 	// If the right button is held down, increment theta and phi (rotate)
-	if (input->IsMouseButtonDown(MouseButtonRight))
+	if (input->IsMouseButtonDown(EInputCodes::MouseButtonRight))
 	{
 		m_yaw -= m_turnSpeed * (mx - m_lastMouse.x) * GameTime::DeltaTime();
 		m_pitch += m_turnSpeed * (my - m_lastMouse.y) * GameTime::DeltaTime();

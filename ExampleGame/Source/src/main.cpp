@@ -3,5 +3,5 @@
 
 int main()
 {
-	return static_cast<int>(Application::Open<DungeonGameInstance>());
+	return static_cast<int>(Vulcan::Application::Open<DungeonGameInstance>());
 }

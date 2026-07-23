@@ -4,6 +4,8 @@
 
 #include "Utility/Collections/HashImpls.h"
 
+using namespace Vulcan;
+
 Transform::Transform()
 	: location{ 0.f }, rotation{ quat{} }, scale{ 1.f }, parent{ nullptr }, nextSibling{ nullptr },
 	previousSibling{ nullptr }, lastChild{ nullptr }, m_owner{ nullptr }

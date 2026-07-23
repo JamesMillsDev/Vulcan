@@ -2,10 +2,13 @@
 
 #include "Maths/Color.h"
 
-struct SceneLightingData
+namespace Vulcan
 {
-public:
-	Color ambientColor;
-	float ambientStrength;
+	struct SceneLightingData
+	{
+	public:
+		Color ambientColor;
+		float ambientStrength;
 
-};
+	};
+}

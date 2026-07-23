@@ -10,6 +10,8 @@
 #include "Graphics/Vulkan/Vulkan.h"
 #include "Utility/Collections/HashImpls.h"
 
+using namespace Vulcan;
+
 using std::runtime_error;
 
 uint32 Texture::m_nextId = 0;

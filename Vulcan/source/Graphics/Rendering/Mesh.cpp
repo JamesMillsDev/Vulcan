@@ -16,6 +16,8 @@
 
 #include "Utility/Collections/HashImpls.h"
 
+using namespace Vulcan;
+
 using std::vector;
 using VertexAttribData = std::tuple<uint8, uint8, VkFormat, size_t>;
 

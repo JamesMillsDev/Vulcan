@@ -7,6 +7,8 @@
 
 #include "Graphics/Vulkan/Vulkan.h"
 
+using namespace Vulcan;
+
 using std::ifstream;
 using std::runtime_error;
 using std::streamsize;

@@ -69,7 +69,6 @@ def pack(project_name : str, directories : json, script_dir : Path, output : str
 
 def copy(project_name : str, out_dir : str, copy_dir : Path, directories : json, script_dir : Path):
     config_dir = directories["config"]
-    dlls_dir = directories["dlls"]
     solution_dir = script_dir / directories["solution"]
 
     input_dir = Path(solution_dir) / Path(project_name) / Path(copy_dir)

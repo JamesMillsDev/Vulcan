@@ -13,6 +13,10 @@
 
 #include "ImGui/imgui.h"
 
+using Vulcan::Color;
+using Vulcan::MeshComponent;
+using Vulcan::Texture;
+
 DungeonGameInstance::DungeonGameInstance() :
 	m_meshActor{ nullptr }, m_camera{ nullptr }, m_material{ nullptr }, m_mesh{ nullptr }
 {}

@@ -4,6 +4,8 @@
 
 #include "Application.h"
 
+using namespace Vulcan;
+
 SimpleInput* SimpleInput::m_instance = nullptr;
 
 SimpleInput* SimpleInput::Instance()

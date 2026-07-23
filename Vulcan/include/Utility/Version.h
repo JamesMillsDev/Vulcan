@@ -4,16 +4,19 @@
 
 using std::string;
 
-class Config;
-
-class Version
+namespace Vulcan
 {
-public:
-	int major;
-	int minor;
-	int patch;
+	class Config;
 
-public:
-	Version(const string& name, Config* config);
+	class Version
+	{
+	public:
+		int major;
+		int minor;
+		int patch;
 
-};
+	public:
+		Version(const string& name, Config* config);
+
+	};
+}

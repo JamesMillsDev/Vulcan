@@ -9,6 +9,8 @@
 #include "Maths/Maths.h"
 #include "Utility/Collections/HashImpls.h"
 
+using namespace Vulcan;
+
 using std::hash;
 
 Camera::Camera(const float fovY, const float nearPlane, const float farPlane)

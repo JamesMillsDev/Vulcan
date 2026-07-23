@@ -8,44 +8,47 @@ using std::string;
 
 struct GLFWwindow;
 
-class Config;
-
-class Window
+namespace Vulcan
 {
-	friend class Application;
-	friend class Vulkan;
+	class Config;
 
-private:
-	int m_width;
-	int m_height;
-	string m_title;
-	bool m_resizable;
-	bool m_isOpen;
+	class Window
+	{
+		friend class Application;
+		friend class Vulkan;
 
-	GLFWwindow* m_window;
+	private:
+		int m_width;
+		int m_height;
+		string m_title;
+		bool m_resizable;
+		bool m_isOpen;
 
-private:
-	explicit Window(Config* config);
-	~Window();
+		GLFWwindow* m_window;
 
-public:
-	[[nodiscard]] float Width() const;
+	private:
+		explicit Window(Config* config);
+		~Window();
 
-	void SetWidth(int w);
+	public:
+		[[nodiscard]] float Width() const;
 
-	[[nodiscard]] float Height() const;
+		void SetWidth(int w);
 
-	void SetHeight(int h);
+		[[nodiscard]] float Height() const;
 
-	[[nodiscard]] bool ShouldClose() const;
+		void SetHeight(int h);
 
-	[[nodiscard]] float Aspect() const;
+		[[nodiscard]] bool ShouldClose() const;
 
-	[[nodiscard]] GLFWwindow* GlfwHandle() const;
+		[[nodiscard]] float Aspect() const;
 
-private:
-	void Open();
+		[[nodiscard]] GLFWwindow* GlfwHandle() const;
 
-	void Close();
+	private:
+		void Open();
 
-};
+		void Close();
+
+	};
+}

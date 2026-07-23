@@ -10,6 +10,8 @@
 
 #include "Utility/Config.h"
 
+using namespace Vulcan;
+
 using std::ifstream;
 using std::vector;
 

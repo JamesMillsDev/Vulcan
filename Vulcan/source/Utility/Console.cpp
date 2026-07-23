@@ -3,6 +3,8 @@
 #include <ctime>
 #include <iostream>
 
+using namespace Vulcan;
+
 ELogLevel Console::m_filter = ELogLevel::Debug | ELogLevel::Info | ELogLevel::Warning | ELogLevel::Error | ELogLevel::Exception;
 
 void Console::ToggleFilter(const ELogLevel level)

@@ -6,6 +6,8 @@
 #include "Graphics/Rendering/Shader.h"
 #include "Graphics/Vulkan/Vulkan.h"
 
+using namespace Vulcan;
+
 bool ShaderConfig::StageComp::operator()(const VkShaderStageFlagBits& lhs, const VkShaderStageFlagBits& rhs) const
 {
 	return lhs < rhs;

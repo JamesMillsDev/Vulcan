@@ -10,105 +10,108 @@
 #include "Utility/Collections/TArray.h"
 #include "Utility/Collections/TList.h"
 
-class MemoryBuffer;
-
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
 
-enum : uint8
+namespace Vulcan
 {
-	LocationIndex,
-	NormalIndex,
-	TangentIndex,
-	BiTangentIndex,
-	UvIndex,
-	ColorIndex,
-	VertexAttributeCount
-};
+	class MemoryBuffer;
 
-struct Vertex
-{
-public:
-	static VkVertexInputBindingDescription GetBindingDescription();
-	static TArray<VkVertexInputAttributeDescription, VertexAttributeCount> GetAttributeDescriptions();
-
-public:
-	/** @brief The location of the vertex in model space. */
-	vec3 location;
-	/** @brief The normal of the vertex in model space. */
-	vec4 normal;
-	/** @brief The tangent of the vertex in model space. */
-	vec4 tangent;
-	/** @brief The bitangent of the vertex in model space. */
-	vec4 biTangent;
-
-	/** @brief The first texture coordinate of the vertex. */
-	vec2 uv;
-	/** @brief The first color of the vertex. */
-	Color color;
-
-};
-
-class Mesh : public Object
-{
-	friend class Renderer;
-	friend class Vulkan;
-
-public:
-	struct SubMesh : Object
+	enum : uint8
 	{
-		friend Mesh;
+		LocationIndex,
+		NormalIndex,
+		TangentIndex,
+		BiTangentIndex,
+		UvIndex,
+		ColorIndex,
+		VertexAttributeCount
+	};
+
+	struct Vertex
+	{
+	public:
+		static VkVertexInputBindingDescription GetBindingDescription();
+		static TArray<VkVertexInputAttributeDescription, VertexAttributeCount> GetAttributeDescriptions();
 
 	public:
-		TList<Vertex> vertices;
-		TList<uint16> indices;
+		/** @brief The location of the vertex in model space. */
+		vec3 location;
+		/** @brief The normal of the vertex in model space. */
+		vec4 normal;
+		/** @brief The tangent of the vertex in model space. */
+		vec4 tangent;
+		/** @brief The bitangent of the vertex in model space. */
+		vec4 biTangent;
 
-	private:
-		VkDeviceSize m_vertexBufferSize;
-		VkDeviceSize m_indexBufferSize;
+		/** @brief The first texture coordinate of the vertex. */
+		vec2 uv;
+		/** @brief The first color of the vertex. */
+		Color color;
 
-		MemoryBuffer* m_vertexBuffer;
+	};
+
+	class Mesh : public Object
+	{
+		friend class Renderer;
+		friend class Vulkan;
 
 	public:
-		SubMesh(const TList<Vertex>& vertices, const TList<uint16>& indices);
-		~SubMesh() override;
+		struct SubMesh : Object
+		{
+			friend Mesh;
+
+		public:
+			TList<Vertex> vertices;
+			TList<uint16> indices;
+
+		private:
+			VkDeviceSize m_vertexBufferSize;
+			VkDeviceSize m_indexBufferSize;
+
+			MemoryBuffer* m_vertexBuffer;
+
+		public:
+			SubMesh(const TList<Vertex>& vertices, const TList<uint16>& indices);
+			~SubMesh() override;
+
+		public:
+			[[nodiscard]] uint64 GetHashCode() const override;
+
+		private:
+			void CreateBuffer();
+
+		};
+
+	public:
+		static Mesh* MakeQuad();
+		static Mesh* MakeFromAssimp(const string& file);
+
+	public:
+		TList<SubMesh*> subMeshes;
+
+	public:
+		explicit Mesh(const TList<SubMesh*>& subMeshes);
+		~Mesh() override;
 
 	public:
 		[[nodiscard]] uint64 GetHashCode() const override;
 
 	private:
-		void CreateBuffer();
+		void CreateBuffers();
+		void DestroyBuffers();
+
+		void Render(VkCommandBuffer buffer, uint32 instances = 1, uint32 firstInstance = 0) const;
 
 	};
-
-public:
-	static Mesh* MakeQuad();
-	static Mesh* MakeFromAssimp(const string& file);
-
-public:
-	TList<SubMesh*> subMeshes;
-
-public:
-	explicit Mesh(const TList<SubMesh*>& subMeshes);
-	~Mesh() override;
-
-public:
-	[[nodiscard]] uint64 GetHashCode() const override;
-
-private:
-	void CreateBuffers();
-	void DestroyBuffers();
-
-	void Render(VkCommandBuffer buffer, uint32 instances = 1, uint32 firstInstance = 0) const;
-
-};
+}
 
 namespace std
 {
 	template<>
-	struct hash<Vertex>
+	struct hash<Vulcan::Vertex>
 	{
-		uint64 operator()(const Vertex& vertex) const noexcept;
+		uint64 operator()(const Vulcan::Vertex& vertex) const noexcept;
 	};
 }

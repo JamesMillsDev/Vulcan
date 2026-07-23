@@ -2,6 +2,8 @@
 
 #include "Maths/Maths.h"
 
+using namespace Vulcan;
+
 using Duration = std::chrono::duration<float>;
 
 high_resolution_clock::time_point GameTime::m_startTime;

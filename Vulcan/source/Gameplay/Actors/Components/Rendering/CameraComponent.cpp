@@ -6,6 +6,8 @@
 #include "Graphics/Rendering/Camera.h"
 #include "Graphics/Rendering/SceneCamera.h"
 
+using namespace Vulcan;
+
 CameraComponent::CameraComponent(const float fovY, const float nearPlane, const float farPlane)
 	: camera{ new SceneCamera{ fovY, nearPlane, farPlane } }, m_window{ Application::GetWindow() }
 {

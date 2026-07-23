@@ -7,27 +7,30 @@
 
 using std::string;
 
-class Vulkan;
-
-class Shader
+namespace Vulcan
 {
-private:
-	static TList<char> ReadShaderFile(const string& fileName);
+	class Vulkan;
 
-private:
-	string m_path;
+	class Shader
+	{
+	private:
+		static TList<char> ReadShaderFile(const string& fileName);
 
-	VkShaderModule m_shaderModule;
+	private:
+		string m_path;
 
-public:
-	explicit Shader(string path);
-	~Shader();
+		VkShaderModule m_shaderModule;
 
-public:
-	[[nodiscard]] const VkShaderModule& GetShaderModule() const;
+	public:
+		explicit Shader(string path);
+		~Shader();
 
-private:
-	void Init(const Vulkan* vulkan);
-	void Destroy();
+	public:
+		[[nodiscard]] const VkShaderModule& GetShaderModule() const;
 
-};
+	private:
+		void Init(const Vulkan* vulkan);
+		void Destroy();
+
+	};
+}

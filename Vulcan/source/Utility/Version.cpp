@@ -2,6 +2,8 @@
 
 #include "Utility/Config.h"
 
+using namespace Vulcan;
+
 Version::Version(const string& name, Config* config)
 {
 	Json versionArray = config->Get<Json>(name);

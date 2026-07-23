@@ -15,35 +15,38 @@ using glm::vec4;
 using glm::mat4;
 using glm::quat;
 
-[[nodiscard]] inline uint64 HashCombine(uint64 seed, uint64 hash)
+namespace Vulcan
 {
-	return seed ^ (hash + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2));
-}
+	[[nodiscard]] inline uint64 HashCombine(uint64 seed, uint64 hash)
+	{
+		return seed ^ (hash + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2));
+	}
 
-template<typename T>
-[[nodiscard]] static uint64 HashValue(T value)
-{
-	hash<T> hasher;
+	template<typename T>
+	[[nodiscard]] static uint64 HashValue(T value)
+	{
+		hash<T> hasher;
 
-	return hasher(value);
-}
+		return hasher(value);
+	}
 
-template<typename... ARGS>
-uint64 HashAll(ARGS&&... args)
-{
-	uint64 seed = 0;
-	((seed = HashCombine(seed, HashValue(std::forward<ARGS>(args)))), ...);
-	return seed;
+	template<typename... ARGS>
+	uint64 HashAll(ARGS&&... args)
+	{
+		uint64 seed = 0;
+		((seed = HashCombine(seed, HashValue(std::forward<ARGS>(args)))), ...);
+		return seed;
+	}
 }
 
 namespace std
 {
 	template<>
-	struct hash<Color>
+	struct hash<Vulcan::Color>
 	{
-		uint64 operator()(const Color& color) const noexcept
+		uint64 operator()(const Vulcan::Color& color) const noexcept
 		{
-			return HashAll(color.r, color.g, color.b, color.a);
+			return Vulcan::HashAll(color.r, color.g, color.b, color.a);
 		}
 	};
 
@@ -52,7 +55,7 @@ namespace std
 	{
 		uint64 operator()(const vec2& vec) const noexcept
 		{
-			return HashAll(vec.x, vec.y);
+			return Vulcan::HashAll(vec.x, vec.y);
 		}
 	};
 
@@ -61,7 +64,7 @@ namespace std
 	{
 		uint64 operator()(const vec3& vec) const noexcept
 		{
-			return HashAll(vec.x, vec.y, vec.z);
+			return Vulcan::HashAll(vec.x, vec.y, vec.z);
 		}
 	};
 
@@ -70,7 +73,7 @@ namespace std
 	{
 		uint64 operator()(const vec4& vec) const noexcept
 		{
-			return HashAll(vec.x, vec.y, vec.x, vec.w);
+			return Vulcan::HashAll(vec.x, vec.y, vec.x, vec.w);
 		}
 	};
 
@@ -79,7 +82,7 @@ namespace std
 	{
 		uint64 operator()(const quat& quaternion) const noexcept
 		{
-			return HashAll(quaternion.x, quaternion.y, quaternion.x, quaternion.w);
+			return Vulcan::HashAll(quaternion.x, quaternion.y, quaternion.x, quaternion.w);
 		}
 	};
 
@@ -88,7 +91,7 @@ namespace std
 	{
 		uint64 operator()(const mat4& matrix) const noexcept
 		{
-			return HashAll(matrix[0], matrix[1], matrix[2], matrix[4]);
+			return Vulcan::HashAll(matrix[0], matrix[1], matrix[2], matrix[4]);
 		}
 	};
 }

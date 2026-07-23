@@ -7,6 +7,8 @@
 
 #include "Maths/Maths.h"
 
+using namespace Vulcan;
+
 static std::unordered_map<char, uint8> asciiToHex =
 {
 	{ '0', static_cast<uint8>(0x00) },

@@ -3,31 +3,34 @@
 #include "Object.h"
 #include "Graphics/Uniforms.h"
 
-class Window;
-
-class Camera : public Object
+namespace Vulcan
 {
-	friend class Renderer;
+	class Window;
 
-public:
-	float fovY;
-	float nearPlane;
-	float farPlane;
+	class Camera : public Object
+	{
+		friend class Renderer;
 
-protected:
-	Window* m_window;
+	public:
+		float fovY;
+		float nearPlane;
+		float farPlane;
 
-private:
-	bool m_isCurrent;
+	protected:
+		Window* m_window;
 
-public:
-	Camera(float fovY, float nearPlane, float farPlane);
+	private:
+		bool m_isCurrent;
 
-public:
-	virtual void GetPvm(ProjectionViewModelUniform& pvm) const;
+	public:
+		Camera(float fovY, float nearPlane, float farPlane);
 
-	[[nodiscard]] bool IsCurrent() const;
+	public:
+		virtual void GetPvm(ProjectionViewModelUniform& pvm) const;
 
-	[[nodiscard]] uint64 GetHashCode() const override;
+		[[nodiscard]] bool IsCurrent() const;
 
-};
+		[[nodiscard]] uint64 GetHashCode() const override;
+
+	};
+}

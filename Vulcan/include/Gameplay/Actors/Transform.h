@@ -8,53 +8,56 @@
 
 #include "Object.h"
 
-class Actor;
-
-using IterationFunc = std::function<void(class Transform*, int)>;
 using glm::mat4;
 using glm::quat;
 using glm::vec3;
 
-class Transform : public Object
+namespace Vulcan
 {
-	friend Actor;
+	class Actor;
+	using IterationFunc = std::function<void(class Transform*, int)>;
 
-public:
-	vec3 location;
-	quat rotation;
-	vec3 scale;
+	class Transform : public Object
+	{
+		friend Actor;
 
-	Transform* parent;
-	Transform* nextSibling;
-	Transform* previousSibling;
-	Transform* lastChild;
+	public:
+		vec3 location;
+		quat rotation;
+		vec3 scale;
 
-private:
-	Actor* m_owner;
+		Transform* parent;
+		Transform* nextSibling;
+		Transform* previousSibling;
+		Transform* lastChild;
 
-private:
-	Transform();
-	~Transform() override;
+	private:
+		Actor* m_owner;
 
-public:
-	[[nodiscard]] uint64 GetHashCode() const override;
+	private:
+		Transform();
+		~Transform() override;
 
-	[[nodiscard]] Actor* Owner() const;
+	public:
+		[[nodiscard]] uint64 GetHashCode() const override;
 
-	[[nodiscard]] mat4 LocalToWorld() const;
-	[[nodiscard]] mat4 WorldToLocal() const;
+		[[nodiscard]] Actor* Owner() const;
 
-	[[nodiscard]] vec3 Right() const;
-	[[nodiscard]] vec3 Up() const;
-	[[nodiscard]] vec3 Forward() const;
+		[[nodiscard]] mat4 LocalToWorld() const;
+		[[nodiscard]] mat4 WorldToLocal() const;
 
-	void SetParent(Transform* newParent, Transform* before = nullptr);
-	void ForEachChild(const IterationFunc& iteration) const;
+		[[nodiscard]] vec3 Right() const;
+		[[nodiscard]] vec3 Up() const;
+		[[nodiscard]] vec3 Forward() const;
 
-private:
-	[[nodiscard]] mat4 LocalToParent() const;
-	[[nodiscard]] mat4 ParentToLocal() const;
+		void SetParent(Transform* newParent, Transform* before = nullptr);
+		void ForEachChild(const IterationFunc& iteration) const;
 
-	void ValidatePointers() const;
+	private:
+		[[nodiscard]] mat4 LocalToParent() const;
+		[[nodiscard]] mat4 ParentToLocal() const;
 
-};
+		void ValidatePointers() const;
+
+	};
+}

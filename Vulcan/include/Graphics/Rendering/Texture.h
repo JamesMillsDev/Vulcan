@@ -9,52 +9,55 @@
 #include "Object.h"
 #include "Maths/Alias.h"
 
-class MemoryBuffer;
-
 using std::queue;
 using std::string;
 
-class Texture : public Object
+namespace Vulcan
 {
-	friend class Material;
-	friend class Renderer;
+	class MemoryBuffer;
 
-private:
-	static uint32 m_nextId;
-	static queue<uint32> m_freeIds;
+	class Texture : public Object
+	{
+		friend class Material;
+		friend class Renderer;
 
-private:
-	string m_file;
+	private:
+		static uint32 m_nextId;
+		static queue<uint32> m_freeIds;
 
-	VkImage m_image;
-	VmaAllocation m_imageAllocation;
-	VkImageView m_imageView;
-	VkSampler m_sampler;
+	private:
+		string m_file;
 
-	VkExtent3D m_imageExtent;
-	VkFormat m_imageFormat;
+		VkImage m_image;
+		VmaAllocation m_imageAllocation;
+		VkImageView m_imageView;
+		VkSampler m_sampler;
 
-	MemoryBuffer* m_buffer;
-	ktxTexture2* m_texture;
+		VkExtent3D m_imageExtent;
+		VkFormat m_imageFormat;
 
-	VkDescriptorImageInfo m_textureDescriptors;
+		MemoryBuffer* m_buffer;
+		ktxTexture2* m_texture;
 
-	uint32 m_id;
+		VkDescriptorImageInfo m_textureDescriptors;
 
-public:
-	explicit Texture(const string& fileName);
-	~Texture() override;
+		uint32 m_id;
 
-public:
-	[[nodiscard]] uint64 GetHashCode() const override;
+	public:
+		explicit Texture(const string& fileName);
+		~Texture() override;
 
-	[[nodiscard]] const VkDescriptorImageInfo& GetDescriptors() const;
-	[[nodiscard]] uint32 GetId() const;
+	public:
+		[[nodiscard]] uint64 GetHashCode() const override;
 
-private:
-	void CreateBuffer();
-	void DestroyBuffer() const;
+		[[nodiscard]] const VkDescriptorImageInfo& GetDescriptors() const;
+		[[nodiscard]] uint32 GetId() const;
 
-	void TransitionImage() const;
+	private:
+		void CreateBuffer();
+		void DestroyBuffer() const;
 
-};
+		void TransitionImage() const;
+
+	};
+}

@@ -3,6 +3,8 @@
 #include <cmath>
 #include <numbers>
 
+using namespace Vulcan;
+
 float constexpr Maths::EPSILON = 1.4e-45f;
 float constexpr Maths::E = std::numbers::e_v<float>;
 float constexpr Maths::PI = std::numbers::pi_v<float>;

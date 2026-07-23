@@ -6,22 +6,25 @@
 
 using std::hash;
 
-class Object
+namespace Vulcan
 {
-public:
-	virtual ~Object() = default;
+	class Object
+	{
+	public:
+		virtual ~Object() = default;
 
-public:
-	[[nodiscard]] virtual uint64 GetHashCode() const = 0;
+	public:
+		[[nodiscard]] virtual uint64 GetHashCode() const = 0;
 
-};
+	};
+}
 
 namespace std
 {
 	template<>
-	struct hash<Object>
+	struct hash<Vulcan::Object>
 	{
-		uint64 operator()(const Object& obj) const noexcept
+		uint64 operator()(const Vulcan::Object& obj) const noexcept
 		{
 			return obj.GetHashCode();
 		}

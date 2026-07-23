@@ -1,18 +1,22 @@
 #pragma once
+
 #include "Camera.h"
 
-class Transform;
-
-class SceneCamera : public Camera
+namespace Vulcan
 {
-private:
-	Transform* m_transform;
+	class Transform;
 
-public:
-	SceneCamera(float fov, float near, float far);
+	class SceneCamera : public Camera
+	{
+	private:
+		Transform* m_transform;
 
-public:
-	void SetTransform(Transform* transform);
-	void GetPvm(ProjectionViewModelUniform& pvm) const override;
+	public:
+		SceneCamera(float fov, float near, float far);
 
-};
+	public:
+		void SetTransform(Transform* transform);
+		void GetPvm(ProjectionViewModelUniform& pvm) const override;
+
+	};
+}

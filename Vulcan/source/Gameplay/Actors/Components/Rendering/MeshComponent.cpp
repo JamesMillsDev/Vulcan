@@ -5,6 +5,8 @@
 
 #include "Graphics/Renderer.h"
 
+using namespace Vulcan;
+
 MeshComponent::MeshComponent(Mesh* mesh, Material* material)
 	: m_mesh{ mesh }, m_material{ material }
 {

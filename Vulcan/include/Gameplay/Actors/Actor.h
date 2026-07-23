@@ -6,59 +6,63 @@
 #include "Utility/Collections/TList.h"
 #include "Gameplay/Actors/Components/IComponent.h"
 
-class Transform;
-
-using std::function;
-using std::pair;
-
-using ComponentListChange = function<void()>;
-
-class Actor
+namespace Vulcan
 {
-	friend class World;
+	class Transform;
 
-private:
-	Transform* m_transform;
+	using std::function;
+	using std::pair;
 
-	TList<IComponent*> m_components;
-	TList<ComponentListChange> m_componentListChanges;
+	using ComponentListChange = function<void()>;
 
-private:
-	Actor();
-	virtual ~Actor();
+	class Actor
+	{
+		friend class World;
 
-public:
-	virtual void BeginPlay();
+	private:
+		Transform* m_transform;
 
-	virtual void Tick();
-	virtual void Render();
+		TList<IComponent*> m_components;
+		TList<ComponentListChange> m_componentListChanges;
 
-	virtual void EndPlay();
+	private:
+		Actor();
+		virtual ~Actor();
 
-	template<typename T, typename... ARGS>
-	T* MakeComponent(ARGS... args);
+	public:
+		virtual void BeginPlay();
 
-	void DestroyComponent(IComponent* component);
+		virtual void Tick();
+		virtual void Render();
 
-	Transform* GetTransform() const;
+		virtual void EndPlay();
 
-private:
-	void ApplyComponentListChanges();
+		template<typename T, typename... ARGS>
+		T* MakeComponent(ARGS... args);
 
-};
+		void DestroyComponent(IComponent* component);
 
-template <typename T, typename... ARGS>
-T* Actor::MakeComponent(ARGS... args)
-{
-	static_assert(std::is_base_of_v<IComponent, T>, "T must derive from IComponent");
+		Transform* GetTransform() const;
 
-	T* newComp = new T{ args... };
-	m_componentListChanges.Add([this, newComp]
-		{
-			newComp->BeginPlay();
-			m_components.Add(newComp);
-		});
+	private:
+		void ApplyComponentListChanges();
 
-	newComp->m_owner = this;
-	return newComp;
+	};
+
+	template <typename T, typename... ARGS>
+	T* Actor::MakeComponent(ARGS... args)
+	{
+		static_assert(std::is_base_of_v<IComponent, T>, "T must derive from IComponent");
+
+		T* newComp = new T{ args... };
+		m_componentListChanges.Add([this, newComp]
+			{
+				newComp->BeginPlay();
+				m_components.Add(newComp);
+			});
+
+		newComp->m_owner = this;
+		return newComp;
+	}
+
 }

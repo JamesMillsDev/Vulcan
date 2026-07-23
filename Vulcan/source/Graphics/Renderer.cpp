@@ -5,6 +5,8 @@
 #include "Graphics/Rendering/Mesh.h"
 #include "Graphics/Vulkan/Vulkan.h"
 
+using namespace Vulcan;
+
 Renderer* Renderer::m_instance = nullptr;
 Camera* Renderer::m_currentCamera = nullptr;
 

@@ -26,6 +26,8 @@
 #include "Utility/Console.h"
 #include "Utility/Version.h"
 
+using namespace Vulcan;
+
 using std::exception;
 
 constexpr uint32 MAX_TEXTURE_DESCRIPTORS = UINT16_MAX;
@@ -143,7 +145,7 @@ void CheckSwapChain(const VkResult result, const string& errorMsg) // NOLINT(mis
 	{
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			Vulkan::Instance()->m_recreateSwapChain = true;
+			Vulkan::Instance()->recreateSwapChain = true;
 			return;
 		}
 
@@ -252,7 +254,7 @@ void Vulkan::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 
 Vulkan::Vulkan(Config* config, GLFWwindow* window)
 	: m_resourceStack{ new ResourceStack }, m_loaded{ false }, m_frameIndex{ 0 },
-	m_imageIndex{ 0 }, m_recreateSwapChain{ false }
+	m_imageIndex{ 0 }, recreateSwapChain{ false }
 {
 	m_appName = config->Get<string>("Application.Title");
 	m_appVersion = new Version{ "Application.Version", config };
@@ -853,7 +855,7 @@ void Vulkan::Init(GLFWwindow* window)
 				Application::GetWindow()->SetWidth(w);
 				Application::GetWindow()->SetHeight(h);
 
-				Instance()->m_recreateSwapChain = true;
+				Instance()->recreateSwapChain = true;
 			});
 
 		// All functions ran safely, so we loaded correctly. 
@@ -884,9 +886,9 @@ void Vulkan::RecreateSwapChain()
 VkCommandBuffer Vulkan::BeginFrame()
 {
 	// Recreate the Swap Chain if needed
-	if (m_recreateSwapChain)
+	if (recreateSwapChain)
 	{
-		m_recreateSwapChain = false;
+		recreateSwapChain = false;
 		RecreateSwapChain();
 	}
 
