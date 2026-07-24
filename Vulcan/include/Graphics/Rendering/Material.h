@@ -85,7 +85,7 @@ namespace Vulcan
 		DEFINE_DEBUG_FUNCTION(ShowGui)
 
 	private:
-		void Bind(VkCommandBuffer cmdBuffer, uint32 objectIndex);
+		void Bind(VkCommandBuffer cmdBuffer, uint32 objectIndex, MaterialUniform* materialUniforms, MemoryBuffer* materialBuffer);
 		void UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const;
 		void UpdateUniformDescriptor(const MemoryBuffer* buffer, uint32 binding) const;
 

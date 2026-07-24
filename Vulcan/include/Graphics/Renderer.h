@@ -17,6 +17,7 @@ using glm::mat4;
 
 namespace Vulcan
 {
+	struct MaterialUniform;
 	class MemoryBuffer;
 	class Application;
 	class Camera;
@@ -55,8 +56,10 @@ namespace Vulcan
 		Vulkan* m_vulkan;
 
 		GlobalsUniform m_globalsUniform;
-		TransformUniform m_transforms;
+		mat4* m_transforms;
+		MaterialUniform* m_materials;
 		MemoryBuffer* m_transformBuffer;
+		MemoryBuffer* m_materialBuffer;
 
 	private:
 		explicit Renderer(Config* config, GLFWwindow* window);

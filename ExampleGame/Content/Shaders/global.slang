@@ -31,19 +31,14 @@ struct GlobalsUniform
     float scaleIBLAmbient;
 };
 
-struct TransformUniform
-{
-    float4x4 value;
-};
-
 static const float PI = 3.14159265359f;
 
 [[vk::binding(0, 0)]] ConstantBuffer<GlobalsUniform> globals;
-[[vk::binding(1, 0)]] ConstantBuffer<TransformUniform> transform;
+[[vk::binding(1, 0)]] ConstantBuffer<float4x4> transform;
 
 float4 TransformVertex(VSInput vertex)
 {
-    return mul(globals.proj, mul(globals.view, mul(transform.value, vertex.location)));
+    return mul(globals.proj, mul(globals.view, mul(transform, vertex.location)));
 }
 
 float3 CalculateNormal(VSOutput vertex, float4 normalValue)

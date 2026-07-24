@@ -66,10 +66,10 @@ uint32 Actor::GetObjectIndex() const
 	return m_objectIndex;
 }
 
-TList<DirtyTransform> Actor::CollectTransforms() const
+TList<DirtyTransform> Actor::CollectDirtyTransforms() const
 {
 	TList<DirtyTransform> transforms;
-	CollectTransforms(transforms);
+	CollectDirtyTransforms(transforms);
 	return transforms;
 }
 
@@ -82,7 +82,7 @@ void Actor::ApplyComponentListChanges()
 	m_componentListChanges.Clear();
 }
 
-void Actor::CollectTransforms(TList<DirtyTransform>& transforms, const Transform* target) const
+void Actor::CollectDirtyTransforms(TList<DirtyTransform>& transforms, const Transform* target) const
 {
 	if (target == nullptr)
 	{
@@ -94,7 +94,7 @@ void Actor::CollectTransforms(TList<DirtyTransform>& transforms, const Transform
 		transforms.Add({ .index = m_objectIndex, .value = m_transform->LocalToWorld() });
 		target->ForEachChild([&](const Transform* child, int)
 			{
-				CollectTransforms(transforms, child);
+				CollectDirtyTransforms(transforms, child);
 			});
 
 		m_transform->m_isDirty = false;

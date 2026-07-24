@@ -100,20 +100,23 @@ Renderer::Renderer(Config* config, GLFWwindow* window)
 	m_vulkan = Vulkan::Instance();
 
 	const uint64 bufferSize = MAX_VISIBLE_OBJECTS * m_vulkan->GetDynamicAlignment();
-	m_transforms.values = static_cast<mat4*>(alignedAlloc(bufferSize, m_vulkan->GetDynamicAlignment()));
-	m_transformBuffer = new MemoryBuffer{ bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_transforms.values, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT };
+	m_transforms = static_cast<mat4*>(alignedAlloc(bufferSize, m_vulkan->GetDynamicAlignment()));
+	m_transformBuffer = new MemoryBuffer{ bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_transforms, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT };
+
+	m_materials = static_cast<MaterialUniform*>(alignedAlloc(bufferSize, m_vulkan->GetDynamicAlignment()));
+	m_materialBuffer = new MemoryBuffer{ bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_materials, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT };
 }
 
 Renderer::~Renderer()
 {
-	alignedFree(m_transforms.values);
+	alignedFree(m_transforms);
 
 	DestroyVulkan();
 }
 
 void Renderer::Render(const Mesh* mesh, Material* material, const uint32 objectIndex) const
 {
-	material->Bind(m_frameCmdBuf, objectIndex);
+	material->Bind(m_frameCmdBuf, objectIndex, m_materials, m_materialBuffer);
 	mesh->Render(m_frameCmdBuf);
 }
 
@@ -136,17 +139,18 @@ void Renderer::BeginFrame()
 	MemoryBuffer* globalsBuff = m_vulkan->GetUniformBuffer(EUniformBufferIds::Globals);
 	globalsBuff->Fill(&m_globalsUniform);
 
+	// Get all transforms that have changed since the last frame
 	const GameInstance* game = Application::GetGameInstance();
-	const TList<DirtyTransform> dirty = game->GetWorld()->GetRootActor()->CollectTransforms();
-
-	if (!dirty.IsEmpty())
+	if (const TList<DirtyTransform> dirty = game->GetWorld()->GetRootActor()->CollectDirtyTransforms(); 
+		!dirty.IsEmpty())
 	{
+		// Update the buffer for the transforms
 		for (auto& [index, value] : dirty)
 		{
-			m_transforms.values[index] = value;
+			m_transforms[index] = value;
 		}
 
-		m_transformBuffer->Fill(m_transforms.values, true);
+		m_transformBuffer->Fill(m_transforms, true);
 	}
 }
 

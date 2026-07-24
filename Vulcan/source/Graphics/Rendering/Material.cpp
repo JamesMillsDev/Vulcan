@@ -82,14 +82,15 @@ void Material::Dbg_ShowGui()
 }
 #endif
 
-void Material::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex)
+void Material::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex, MaterialUniform* materialUniforms,
+	MemoryBuffer* materialBuffer)
 {
 	ValidatePipeline();
 
 	Vulkan* vulkan = Vulkan::Instance();
 
 	// Update the material uniform with this material's data
-	const MaterialUniform materialUniform
+	materialUniforms[objectIndex] =
 	{
 		.color = color,
 		.emissiveTint = emissiveTint,
@@ -105,9 +106,7 @@ void Material::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex)
 		.heightMap = m_textures[HEIGHT_MAP_NAME] != nullptr ? m_textures[HEIGHT_MAP_NAME]->GetId() : -1,
 	};
 
-	MemoryBuffer* materialBuffer = vulkan->GetUniformBuffer(EUniformBufferIds::Materials);
-	materialBuffer->Fill(&materialUniform, sizeof(MaterialUniform), objectIndex);
-
+	materialBuffer->Fill(materialUniforms);
 	m_pipeline->Bind(cmdBuffer, objectIndex);
 
 	// Update the descriptor sets if needed
@@ -139,7 +138,7 @@ void Material::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex)
 		}
 
 		UpdateDescriptorSets(writes);
-		m_shouldUpdateDescriptors = false; 
+		m_shouldUpdateDescriptors = false;
 	}
 }
 

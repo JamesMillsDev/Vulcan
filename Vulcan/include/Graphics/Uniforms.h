@@ -19,10 +19,4 @@ namespace Vulcan
 		float prefilteredCubeMipLevels;
 		float scaleIBLAmbient;
 	};
-
-	struct TransformUniform
-	{
-		mat4* values = nullptr;
-	};
-
 }

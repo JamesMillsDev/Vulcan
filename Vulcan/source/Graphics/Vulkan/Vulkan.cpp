@@ -40,20 +40,6 @@ const TArray UNIFORM_DATA
 	UniformBufferData
 	{
 		.count = 1,
-		.size = sizeof(TransformUniform) * MAX_VISIBLE_OBJECTS,
-		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		.id = static_cast<uint16>(EUniformBufferIds::Transforms)
-	},
-	UniformBufferData
-	{
-		.count = 1,
-		.size = sizeof(MaterialUniform) * MAX_VISIBLE_OBJECTS,
-		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		.id = static_cast<uint16>(EUniformBufferIds::Materials)
-	},
-	UniformBufferData
-	{
-		.count = 1,
 		.size = sizeof(SceneLightingUniform),
 		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		.id = static_cast<uint16>(EUniformBufferIds::SceneLighting)
@@ -512,7 +498,7 @@ void Vulkan::Init(GLFWwindow* window)
 				vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_memoryProperties);
 
 				const uint64 minUboAlignment = m_deviceProperties.limits.minUniformBufferOffsetAlignment;
-				m_dynamicAlignment = sizeof(TransformUniform);
+				m_dynamicAlignment = sizeof(mat4);
 				if (minUboAlignment > 0)
 				{
 					m_dynamicAlignment = (m_dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
@@ -700,6 +686,8 @@ void Vulkan::Init(GLFWwindow* window)
 
 						for (uint32 j = 0; j < uniformData.count; ++j)
 						{
+
+
 							buffer.Add(new MemoryBuffer
 								{
 									uniformData.size,
