@@ -27,6 +27,11 @@ void Application::Quit()
 	GetWindow()->m_isOpen = false;
 }
 
+GameInstance* Application::GetGameInstance()
+{
+	return m_instance->m_game;
+}
+
 Window* Application::GetWindow()
 {
 	return m_instance->m_window;

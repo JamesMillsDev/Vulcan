@@ -29,7 +29,7 @@ namespace Vulcan
 	class GraphicsPipeline;
 
 	constexpr int32 MAX_FRAMES_IN_FLIGHT = 2;
-	constexpr uint32 MAX_VISIBLE_OBJECTS = 10000;
+	constexpr uint32 MAX_VISIBLE_OBJECTS = 1000;
 
 #ifdef _DEBUG
 	constexpr bool ENABLE_VALIDATION_LAYERS = true;
@@ -80,6 +80,7 @@ namespace Vulcan
 		DEFINE_ACCESSOR(VkDevice, Device)
 		DEFINE_ACCESSOR(VmaAllocator, Allocator)
 		DEFINE_ACCESSOR(VkPhysicalDeviceProperties, DeviceProperties)
+		DEFINE_ACCESSOR(VkPhysicalDeviceMemoryProperties, MemoryProperties)
 		DEFINE_ACCESSOR(uint64, DynamicAlignment)
 
 		[[nodiscard]] static bool IsLoaded();
@@ -110,6 +111,7 @@ namespace Vulcan
 		VkDebugUtilsMessengerEXT m_debugMessenger;
 
 		VkPhysicalDeviceProperties m_deviceProperties;
+		VkPhysicalDeviceMemoryProperties m_memoryProperties;
 		VkPhysicalDevice m_physicalDevice;
 		VkDevice m_device;
 		VkQueue m_queue;

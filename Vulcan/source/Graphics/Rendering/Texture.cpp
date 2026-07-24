@@ -199,7 +199,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	}
 
 	// Generate the buffer and transition
-	m_buffer = new MemoryBuffer{ m_texture->dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, Vulkan::Instance() };
+	m_buffer = new MemoryBuffer{ m_texture->dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
 	m_buffer->Fill(m_texture->pData);
 
 	TransitionImage();

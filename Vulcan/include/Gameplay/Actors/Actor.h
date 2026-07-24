@@ -2,18 +2,26 @@
 
 #include <functional>
 #include <utility>
+#include <glm/mat4x4.hpp>
 
 #include "Utility/Collections/TList.h"
 #include "Gameplay/Actors/Components/IComponent.h"
 
 using std::function;
 using std::pair;
+using glm::mat4;
 
 namespace Vulcan
 {
 	class Transform;
 
 	using ComponentListChange = function<void()>;
+
+	struct DirtyTransform
+	{
+		uint32 index;
+		mat4 value;
+	};
 
 	class Actor
 	{
@@ -55,8 +63,12 @@ namespace Vulcan
 		World const* GetWorld() const;
 		uint32 GetObjectIndex() const;
 
+		TList<DirtyTransform> CollectTransforms() const;
+
 	private:
 		void ApplyComponentListChanges();
+
+		void CollectTransforms(TList<DirtyTransform>& transforms, const Transform* target = nullptr) const;
 
 	};
 

@@ -24,9 +24,9 @@ void ExampleGameInstance::Init()
 
 	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
 	m_material = new Material{ "Shaders/pbr" };
-	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_Soulspear_B"));
-	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_Soulspear_N"));
-	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_Soulspear_ORM"));
+	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_BC"));
+	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N"));
+	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_ORM"));
 
 	m_meshActor = GetWorld()->MakeActor<Actor>();
 	m_meshActor->MakeComponent<MeshComponent>(m_mesh, m_material);

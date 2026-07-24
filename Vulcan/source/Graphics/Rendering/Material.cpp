@@ -105,7 +105,7 @@ void Material::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex)
 		.heightMap = m_textures[HEIGHT_MAP_NAME] != nullptr ? m_textures[HEIGHT_MAP_NAME]->GetId() : -1,
 	};
 
-	const MemoryBuffer* materialBuffer = vulkan->GetUniformBuffer(EUniformBufferIds::Materials);
+	MemoryBuffer* materialBuffer = vulkan->GetUniformBuffer(EUniformBufferIds::Materials);
 	materialBuffer->Fill(&materialUniform, sizeof(MaterialUniform), objectIndex);
 
 	m_pipeline->Bind(cmdBuffer, objectIndex);

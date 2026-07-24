@@ -20,5 +20,5 @@ void SceneCamera::GetPvm(GlobalsUniform& pvm) const
 	Camera::GetPvm(pvm);
 
 	pvm.view = m_transform->LocalToWorld();
-	pvm.cameraLocation = m_transform->location;
+	pvm.cameraLocation = m_transform->Location();
 }

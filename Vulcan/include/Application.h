@@ -65,6 +65,9 @@ namespace Vulcan
 		/** @brief Tells the application to close down safely this frame. */
 		static void Quit();
 
+		/** @brief Returns the pointer to the game instance. */
+		static GameInstance* GetGameInstance();
+
 		/** @brief Returns the pointer to the window instance. */
 		static Window* GetWindow();
 

@@ -28,12 +28,12 @@ void Lighting::UpdateBuffers()
 {
 	const Vulkan* vulkan = Vulkan::Instance();
 
-	const MemoryBuffer* sceneLightBuffer = vulkan->GetUniformBuffer(EUniformBufferIds::SceneLighting);
+	MemoryBuffer* sceneLightBuffer = vulkan->GetUniformBuffer(EUniformBufferIds::SceneLighting);
 	sceneLightBuffer->Fill(&m_sceneLighting);
 
 	for (uint8 i = 0; i < MAX_LIGHT_COUNT; ++i)
 	{
-		if (const MemoryBuffer* buffer = vulkan->GetUniformBuffer(EUniformBufferIds::Lights, i)) 
+		if (MemoryBuffer* buffer = vulkan->GetUniformBuffer(EUniformBufferIds::Lights, i)) 
 		{
 			LightUniform lightUniform
 			{
@@ -57,7 +57,7 @@ void Lighting::UpdateBuffers()
 
 				lightUniform =
 				{
-					.location = vec4{ transform->location, 1.f },
+					.location = vec4{ transform->Location(), 1.f },
 					// multiply the direction by 50000 to make sure it normalizes to 1
 					.direction = vec4{ glm::normalize(transform->Forward() * 50000.f), 0.f },
 					.color = light->color,

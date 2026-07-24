@@ -49,10 +49,15 @@ GraphicsPipeline::~GraphicsPipeline()
 
 void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex) const
 {
-	const uint32 dynamicOffset = objectIndex * static_cast<uint32>(Vulkan::DynamicAlignment());
+	TArray dynamicOffsets = 
+	{
+		objectIndex * static_cast<uint32>(Vulkan::DynamicAlignment()),
+		objectIndex * static_cast<uint32>(Vulkan::DynamicAlignment()),
+	};
 
 	vkCmdBindDescriptorSets(
-		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, 1, &dynamicOffset
+		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, 
+		dynamicOffsets.Count(), dynamicOffsets.Data()
 	);
 
 	vkCmdBindPipeline(cmdBuffer, m_bindPoint, m_pipeline);
@@ -116,7 +121,7 @@ void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
 			.pImmutableSamplers = nullptr
 		},
-		VkDescriptorSetLayoutBinding
+		VkDescriptorSetLayoutBinding 
 		{
 			.binding = 3,
 			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -275,7 +280,7 @@ void GraphicsPipeline::InitPipeline(Vulkan* vulkan)
 	TList<VkPipelineShaderStageCreateInfo> ssCreateInfos;
 	for (int32 i = VK_SHADER_STAGE_VERTEX_BIT; i < VK_SHADER_STAGE_ALL_GRAPHICS; i <<= 1)
 	{
-		if (!m_config.ContainsStage(static_cast<VkShaderStageFlagBits>(i)))
+		if (!m_config.ContainsStage(static_cast<VkShaderStageFlagBits>(i))) 
 		{
 			continue;
 		}

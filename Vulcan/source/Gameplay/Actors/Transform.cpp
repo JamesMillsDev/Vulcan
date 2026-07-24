@@ -5,19 +5,19 @@
 
 using namespace Vulcan;
 
-Transform::Transform()
-	: location{ 0.f }, rotation{ quat{} }, scale{ 1.f }, parent{ nullptr }, nextSibling{ nullptr },
-	previousSibling{ nullptr }, lastChild{ nullptr }, m_owner{ nullptr }
+Transform::Transform() :
+	m_location{ 0.f }, m_rotation{ quat{} }, m_scale{ 1.f }, m_parent{ nullptr }, m_nextSibling{ nullptr },
+	m_previousSibling{ nullptr }, m_lastChild{ nullptr }, m_owner{ nullptr }, m_isDirty{ false }
 {}
 
 Transform::~Transform()
 {
-	while (lastChild != nullptr)
+	while (m_lastChild != nullptr)
 	{
-		lastChild->SetParent(nullptr);
+		m_lastChild->SetParent(nullptr);
 	}
 
-	if (parent != nullptr)
+	if (m_parent != nullptr)
 	{
 		SetParent(nullptr);
 	}
@@ -25,7 +25,12 @@ Transform::~Transform()
 
 uint64 Transform::GetHashCode() const
 {
-	return HashAll(location, rotation, scale);
+	return HashAll(m_location, m_rotation, m_scale);
+}
+
+bool Transform::IsDirty() const
+{
+	return m_isDirty;
 }
 
 Actor* Transform::Owner() const
@@ -35,12 +40,12 @@ Actor* Transform::Owner() const
 
 mat4 Transform::LocalToWorld() const
 {
-	return parent != nullptr ? parent->LocalToWorld() * LocalToParent() : LocalToParent();
+	return m_parent != nullptr ? m_parent->LocalToWorld() * LocalToParent() : LocalToParent();
 }
 
 mat4 Transform::WorldToLocal() const
 {
-	return parent != nullptr ? ParentToLocal() * parent->WorldToLocal() : ParentToLocal();
+	return m_parent != nullptr ? ParentToLocal() * m_parent->WorldToLocal() : ParentToLocal();
 }
 
 vec3 Transform::Right() const
@@ -58,48 +63,99 @@ vec3 Transform::Forward() const
 	return LocalToWorld()[2];
 }
 
+vec3 Transform::Location() const
+{
+	return m_location;
+}
+
+quat Transform::Rotation() const
+{
+	return m_rotation;
+}
+
+vec3 Transform::Scale() const
+{
+	return m_scale;
+}
+
+void Transform::SetLocation(const vec3 newValue)
+{
+	m_location = newValue;
+	m_isDirty = true;
+}
+
+void Transform::SetRotation(const quat newValue)
+{
+	m_rotation = newValue;
+	m_isDirty = true;
+}
+
+void Transform::SetScale(const vec3 newValue)
+{
+	m_scale = newValue;
+	m_isDirty = true;
+}
+
+void Transform::UpdateLocation(const vec3 deltaValue)
+{
+	m_location += deltaValue;
+	m_isDirty = true;
+}
+
+void Transform::UpdateRotation(const quat deltaValue)
+{
+	m_rotation *= deltaValue;
+	m_isDirty = true;
+}
+
+void Transform::UpdateScale(const vec3 deltaValue)
+{
+	m_scale += deltaValue;
+	m_isDirty = true;
+}
+
 void Transform::SetParent(Transform* newParent, Transform* before)
 {
 	ValidatePointers();
 
-	if (parent != nullptr)
+	if (m_parent != nullptr)
 	{
-		if (previousSibling != nullptr)
+		if (m_previousSibling != nullptr)
 		{
-			previousSibling->nextSibling = nextSibling;
+			m_previousSibling->m_nextSibling = m_nextSibling;
 		}
 
-		if (nextSibling != nullptr)
+		if (m_nextSibling != nullptr)
 		{
-			nextSibling->previousSibling = previousSibling;
+			m_nextSibling->m_previousSibling = m_previousSibling;
 		}
 		else
 		{
-			parent->lastChild = previousSibling;
+			m_parent->m_lastChild = m_previousSibling;
 		}
 
-		nextSibling = previousSibling = nullptr;
+		m_nextSibling = m_previousSibling = nullptr;
 	}
 
-	parent = newParent;
+	m_parent = newParent;
 
-	if (parent != nullptr)
+	if (m_parent != nullptr)
 	{
 		if (before != nullptr)
 		{
-			previousSibling = before->previousSibling;
-			nextSibling = before;
-			nextSibling->previousSibling = this;
+			m_previousSibling = before->m_previousSibling;
+			m_nextSibling = before;
+			m_nextSibling->m_previousSibling = this;
 		}
 		else
 		{
-			previousSibling = parent->lastChild;
-			parent->lastChild = this;
+			m_previousSibling = m_parent->m_lastChild;
+			m_parent->m_lastChild = this;
 		}
 
-		if (previousSibling != nullptr)
+		if (m_previousSibling != nullptr)
 		{
-			previousSibling->nextSibling = this;
+			m_previousSibling->m_nextSibling = this;
 		}
 	}
 
@@ -109,50 +165,50 @@ void Transform::SetParent(Transform* newParent, Transform* before)
 void Transform::ForEachChild(const IterationFunc& iteration) const
 {
 	int index = 0;
-	Transform* child = lastChild;
+	Transform* child = m_lastChild;
 
 	while (child != nullptr)
 	{
 		iteration(child, index++);
 
-		child = child->previousSibling;
+		child = child->m_previousSibling;
 	}
 }
 
 mat4 Transform::LocalToParent() const
 {
-	return glm::translate(mat4{ 1.f }, location) * 
-		glm::mat4_cast(rotation) * 
-		glm::scale(mat4{ 1.f }, scale);
+	return glm::translate(mat4{ 1.f }, m_location) *
+		glm::mat4_cast(m_rotation) *
+		glm::scale(mat4{ 1.f }, m_scale);
 }
 
 mat4 Transform::ParentToLocal() const
 {
-	const vec3 inverseScale = 
+	const vec3 inverseScale =
 	{
-		Maths::IsNearZero(scale.x) ? 0.f : 1.f / scale.x,
-		Maths::IsNearZero(scale.y) ? 0.f : 1.f / scale.y,
-		Maths::IsNearZero(scale.z) ? 0.f : 1.f / scale.z,
+		Maths::IsNearZero(m_scale.x) ? 0.f : 1.f / m_scale.x,
+		Maths::IsNearZero(m_scale.y) ? 0.f : 1.f / m_scale.y,
+		Maths::IsNearZero(m_scale.z) ? 0.f : 1.f / m_scale.z,
 	};
 
-	return glm::scale(mat4{ 1.f }, inverseScale) * 
-		glm::mat4_cast(glm::inverse(rotation)) *
-		glm::translate(mat4{ 1.f }, -location);
+	return glm::scale(mat4{ 1.f }, inverseScale) *
+		glm::mat4_cast(glm::inverse(m_rotation)) *
+		glm::translate(mat4{ 1.f }, -m_location);
 }
 
 void Transform::ValidatePointers() const
 {
-	if (parent == nullptr)
+	if (m_parent == nullptr)
 	{
-		assert(previousSibling == nullptr);
-		assert(nextSibling == nullptr);
+		assert(m_previousSibling == nullptr);
+		assert(m_nextSibling == nullptr);
 	}
 	else
 	{
-		assert((nextSibling == nullptr) == (this == parent->lastChild));
+		assert((m_nextSibling == nullptr) == (this == m_parent->m_lastChild));
 	}
 
-	assert(previousSibling == nullptr || previousSibling->nextSibling == this);
-	assert(nextSibling == nullptr || nextSibling->previousSibling == this);
-	assert(lastChild == nullptr || lastChild->parent == this);
+	assert(m_previousSibling == nullptr || m_previousSibling->m_nextSibling == this);
+	assert(m_nextSibling == nullptr || m_nextSibling->m_previousSibling == this);
+	assert(m_lastChild == nullptr || m_lastChild->m_parent == this);
 }

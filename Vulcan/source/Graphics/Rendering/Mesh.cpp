@@ -87,8 +87,7 @@ void Mesh::SubMesh::CreateBuffer()
 	m_vertexBuffer = new MemoryBuffer
 	{
 		m_vertexBufferSize + m_indexBufferSize,
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-		Vulkan::Instance()
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
 	};
 
 	// Copy the vertex and index information into the buffer

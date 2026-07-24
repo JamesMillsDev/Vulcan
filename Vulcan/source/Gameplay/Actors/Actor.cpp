@@ -12,9 +12,9 @@ Actor::Actor()
 
 Actor::~Actor()
 {
-	while (m_transform->lastChild != nullptr)
+	while (m_transform->m_lastChild != nullptr)
 	{
-		Transform* transform = m_transform->lastChild;
+		Transform* transform = m_transform->m_lastChild;
 		transform->SetParent(nullptr);
 		delete transform->Owner();
 	}
@@ -66,6 +66,13 @@ uint32 Actor::GetObjectIndex() const
 	return m_objectIndex;
 }
 
+TList<DirtyTransform> Actor::CollectTransforms() const
+{
+	TList<DirtyTransform> transforms;
+	CollectTransforms(transforms);
+	return transforms;
+}
+
 void Actor::ApplyComponentListChanges()
 {
 	for (const ComponentListChange& change : m_componentListChanges)
@@ -73,4 +80,23 @@ void Actor::ApplyComponentListChanges()
 		change();
 	}
 	m_componentListChanges.Clear();
+}
+
+void Actor::CollectTransforms(TList<DirtyTransform>& transforms, const Transform* target) const
+{
+	if (target == nullptr)
+	{
+		target = m_transform;
+	}
+
+	if (m_transform->m_isDirty)
+	{
+		transforms.Add({ .index = m_objectIndex, .value = m_transform->LocalToWorld() });
+		target->ForEachChild([&](const Transform* child, int)
+			{
+				CollectTransforms(transforms, child);
+			});
+
+		m_transform->m_isDirty = false;
+	}
 }

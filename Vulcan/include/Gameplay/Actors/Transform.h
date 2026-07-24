@@ -21,19 +21,20 @@ namespace Vulcan
 	class Transform : public Object
 	{
 		friend Actor;
-
-	public:
-		vec3 location;
-		quat rotation;
-		vec3 scale;
-
-		Transform* parent;
-		Transform* nextSibling;
-		Transform* previousSibling;
-		Transform* lastChild;
+		friend class World;
 
 	private:
+		vec3 m_location;
+		quat m_rotation;
+		vec3 m_scale;
+
+		Transform* m_parent;
+		Transform* m_nextSibling;
+		Transform* m_previousSibling;
+		Transform* m_lastChild;
+
 		Actor* m_owner;
+		bool m_isDirty;
 
 	private:
 		Transform();
@@ -41,6 +42,7 @@ namespace Vulcan
 
 	public:
 		[[nodiscard]] uint64 GetHashCode() const override;
+		[[nodiscard]] bool IsDirty() const;
 
 		[[nodiscard]] Actor* Owner() const;
 
@@ -50,6 +52,18 @@ namespace Vulcan
 		[[nodiscard]] vec3 Right() const;
 		[[nodiscard]] vec3 Up() const;
 		[[nodiscard]] vec3 Forward() const;
+
+		[[nodiscard]] vec3 Location() const;
+		[[nodiscard]] quat Rotation() const;
+		[[nodiscard]] vec3 Scale() const;
+
+		void SetLocation(vec3 newValue);
+		void SetRotation(quat newValue);
+		void SetScale(vec3 newValue);
+
+		void UpdateLocation(vec3 deltaValue);
+		void UpdateRotation(quat deltaValue);
+		void UpdateScale(vec3 deltaValue);
 
 		void SetParent(Transform* newParent, Transform* before = nullptr);
 		void ForEachChild(const IterationFunc& iteration) const;

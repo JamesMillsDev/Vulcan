@@ -20,7 +20,7 @@ Material* MeshComponent::GetMaterial() const
 
 void MeshComponent::Render()
 {
-	Renderer::Instance()->Render(m_mesh, m_material, Owner()->GetTransform()->LocalToWorld(), Owner()->GetObjectIndex());
+	Renderer::Instance()->Render(m_mesh, m_material, Owner()->GetObjectIndex());
 
 	m_material->Dbg_ShowGui(); 
 }

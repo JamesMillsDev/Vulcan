@@ -63,7 +63,7 @@ namespace Vulcan
 		~Renderer();
 
 	public:
-		void Render(const Mesh* mesh, Material* material, const mat4& transform, uint32 objectIndex) const;
+		void Render(const Mesh* mesh, Material* material, uint32 objectIndex) const;
 
 	private:
 		void BeginFrame();

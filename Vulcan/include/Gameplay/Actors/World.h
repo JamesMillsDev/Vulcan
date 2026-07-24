@@ -43,6 +43,7 @@ namespace Vulcan
 		void DestroyActor(Actor* actor);
 
 		Lighting* GetLighting() const;
+		Actor* GetRootActor() const;
 
 	private:
 		void Tick(Actor* actor = nullptr);
@@ -71,6 +72,7 @@ namespace Vulcan
 
 				actor->m_objectIndex = objectIndex;
 				actor->m_world = this;
+				actor->GetTransform()->m_isDirty = true;
 				actor->GetTransform()->SetParent(m_root->GetTransform());
 
 				actor->BeginPlay();

@@ -39,6 +39,11 @@ Lighting* World::GetLighting() const
 	return m_lighting;
 }
 
+Actor* World::GetRootActor() const
+{
+	return m_root;
+}
+
 void World::Tick(Actor* actor)
 {
 	if (actor == nullptr)
