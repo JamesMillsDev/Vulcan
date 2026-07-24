@@ -6,12 +6,13 @@
 
 namespace Vulcan
 {
+	class GraphicsDevice;
 	class Vulkan;
 
 	class MemoryBuffer
 	{
 	private:
-		static uint32 GetMemoryType(uint32 typeBits, VkMemoryPropertyFlags properties, const Vulkan* vulkan, VkBool32* memTypeFound = nullptr);
+		static uint32 GetMemoryType(uint32 typeBits, VkMemoryPropertyFlags properties, const GraphicsDevice* device, VkBool32* memTypeFound = nullptr);
 
 	private:
 		VkDeviceSize m_size;
@@ -28,18 +29,18 @@ namespace Vulcan
 		VkDescriptorBufferInfo m_bufferInfo;
 
 	public:
-		explicit MemoryBuffer(VkDeviceSize size, VkBufferUsageFlags usage, const void* data = nullptr, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, const Vulkan* vulkan = nullptr);
+		explicit MemoryBuffer(VkDeviceSize size, VkBufferUsageFlags usage, const void* data = nullptr, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, const GraphicsDevice* device = nullptr);
 		~MemoryBuffer();
 
 	public:
-		VkResult Bind(VkDeviceSize offset = 0, const Vulkan* vulkan = nullptr) const;
+		VkResult Bind(VkDeviceSize offset = 0, const GraphicsDevice* device = nullptr) const;
 		void Fill(const void* data, VkDeviceSize size = 0, VkDeviceSize offset = 0, bool shouldFlush = false);
 
-		VkResult Map(VkDeviceSize size = 0, VkDeviceSize offset = 0, const Vulkan* vulkan = nullptr);
-		void UnMap(const Vulkan* vulkan = nullptr);
+		VkResult Map(VkDeviceSize size = 0, VkDeviceSize offset = 0, const GraphicsDevice* device = nullptr);
+		void UnMap(const GraphicsDevice* device = nullptr);
 
-		VkResult Flush(VkDeviceSize size = 0, VkDeviceSize offset = 0, const Vulkan* vulkan = nullptr) const;
-		VkResult Invalidate(VkDeviceSize size = 0, VkDeviceSize offset = 0, const Vulkan* vulkan = nullptr) const;
+		VkResult Flush(VkDeviceSize size = 0, VkDeviceSize offset = 0, const GraphicsDevice* device = nullptr) const;
+		VkResult Invalidate(VkDeviceSize size = 0, VkDeviceSize offset = 0, const GraphicsDevice* device = nullptr) const;
 
 		[[nodiscard]] const VkBuffer& Get() const;
 		[[nodiscard]] const VkDescriptorBufferInfo& GetBufferInfo() const;
@@ -47,7 +48,7 @@ namespace Vulcan
 		[[nodiscard]] const VkDeviceSize& Size() const;
 
 	private:
-		void Create(const void* data, const Vulkan* vulkan = nullptr);
+		void Create(const void* data, const GraphicsDevice* device = nullptr);
 		void Destroy();
 
 		

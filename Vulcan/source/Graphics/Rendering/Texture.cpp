@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "Resources.h"
+#include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
 #include "Utility/Console.h"
@@ -192,7 +193,9 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	viewCreateInfo.subresourceRange.levelCount = m_texture->numLevels;
 	viewCreateInfo.subresourceRange.layerCount = 1;
 
-	if (result = vkCreateImageView(Vulkan::Device(), &viewCreateInfo, nullptr, &m_imageView);
+	const GraphicsDevice* device = Vulkan::Device();
+
+	if (result = vkCreateImageView(device->Logical(), &viewCreateInfo, nullptr, &m_imageView);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Image View from texture!", result);
@@ -217,7 +220,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	samplerInfo.maxAnisotropy = 8.f;
 	samplerInfo.maxLod = static_cast<float>(m_texture->numLevels);
 
-	if (result = vkCreateSampler(Vulkan::Device(), &samplerInfo, nullptr, &m_sampler);
+	if (result = vkCreateSampler(device->Logical(), &samplerInfo, nullptr, &m_sampler);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Sampler from image!", result);
@@ -234,8 +237,10 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 
 void Texture::VulkanTexture::DestroyBuffer() const
 {
-	vkDestroyImageView(Vulkan::Device(), m_imageView, nullptr);
-	vkDestroySampler(Vulkan::Device(), m_sampler, nullptr);
+	const GraphicsDevice* device = Vulkan::Device();
+
+	vkDestroyImageView(device->Logical(), m_imageView, nullptr);
+	vkDestroySampler(device->Logical(), m_sampler, nullptr);
 	vmaDestroyImage(Vulkan::Allocator(), m_image, m_imageAllocation);
 }
 

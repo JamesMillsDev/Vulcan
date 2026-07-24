@@ -20,6 +20,7 @@ using InitFunction = std::function<void()>;
 
 namespace Vulcan
 {
+	class GraphicsDevice;
 	class Config;
 	class Renderer;
 	class SwapChain;
@@ -41,10 +42,6 @@ namespace Vulcan
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
-
-#define DEFINE_ACCESSOR(TYPE, NAME) \
-	[[nodiscard]] static const TYPE& NAME(); \
-	[[nodiscard]] const TYPE& Get##NAME() const; \
 
 	struct UniformBufferData
 	{
@@ -77,14 +74,12 @@ namespace Vulcan
 
 	public:
 		[[nodiscard]] static Vulkan* Instance();
-		DEFINE_ACCESSOR(VkDevice, Device)
-		DEFINE_ACCESSOR(VmaAllocator, Allocator)
-		DEFINE_ACCESSOR(VkPhysicalDeviceProperties, DeviceProperties)
-		DEFINE_ACCESSOR(VkPhysicalDeviceMemoryProperties, MemoryProperties)
-		DEFINE_ACCESSOR(uint64, DynamicAlignment)
 
 		[[nodiscard]] static bool IsLoaded();
 		[[nodiscard]] static runtime_error VulkanError(const string& message, VkResult result);
+
+		[[nodiscard]] static const GraphicsDevice* Device();
+		[[nodiscard]] static const VmaAllocator& Allocator();
 
 	private:
 		static void Create(Config* config, GLFWwindow* window);
@@ -110,33 +105,16 @@ namespace Vulcan
 		VkInstance m_vkInstance;
 		VkDebugUtilsMessengerEXT m_debugMessenger;
 
-		VkPhysicalDeviceProperties m_deviceProperties;
-		VkPhysicalDeviceMemoryProperties m_memoryProperties;
-		VkPhysicalDevice m_physicalDevice;
-		VkDevice m_device;
-		VkQueue m_queue;
-		uint32 m_queueFamily;
-
-		VkSurfaceKHR m_surface;
-
+		GraphicsDevice* m_device;
 		SwapChain* m_swapChain;
 
-		VkImage m_depthImage;
-		VmaAllocation m_depthImageAllocation;
-		VkImageView m_depthImageView;
-
 		TArray<UniformBufferSet, MAX_FRAMES_IN_FLIGHT> m_shaderDataBuffers;
-
-		TArray<VkFence, MAX_FRAMES_IN_FLIGHT> m_fences;
-		TArray<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imageAcquiredSemaphores;
-		TList<VkSemaphore> m_renderCompleteSemaphores;
 
 		VkCommandPool m_commandPool;
 		TArray<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers;
 
 		uint32 m_frameIndex;
 		uint32 m_imageIndex;
-		uint64 m_dynamicAlignment;
 
 		VkDescriptorPool m_imguiPool;
 
@@ -153,17 +131,25 @@ namespace Vulcan
 
 		VkFormat GetDepthFormat() const;
 
+		[[nodiscard]] const GraphicsDevice* GetDevice() const;
+		[[nodiscard]] const VmaAllocator& GetAllocator() const;
+
 	private:
 		void Init(GLFWwindow* window);
-		void RecreateSwapChain();
+		void RecreateSwapChain() const;
 
 		VkCommandBuffer BeginFrame();
 		void EndFrame(VkCommandBuffer cmdBuffer);
-
-		void TransitionFrameImages(VkCommandBuffer cmdBuffer) const;
-		void CreateDepthImage(const VkExtent3D& extent, const VkFormat& format);
-
+		
 		void InitAndPushResource(const InitFunction& init, const CleanupFunction& cleanup) const;
 
 	};
+
+	inline void Try(const VkResult result, const string& errorMsg)
+	{
+		if (result != VK_SUCCESS)
+		{
+			throw Vulkan::VulkanError(errorMsg, result);
+		}
+	}
 }

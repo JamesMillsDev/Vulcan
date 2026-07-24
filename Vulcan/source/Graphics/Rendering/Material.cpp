@@ -7,6 +7,7 @@
 #include "Graphics/Renderer.h"
 #include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Texture.h"
+#include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/GraphicsPipeline.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
@@ -152,7 +153,7 @@ void Material::UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const
 		}
 	}
 
-	vkUpdateDescriptorSets(Vulkan::Device(), static_cast<uint32>(writes.Count()), writes.Data(), 0, nullptr);
+	vkUpdateDescriptorSets(Vulkan::Device()->Logical(), static_cast<uint32>(writes.Count()), writes.Data(), 0, nullptr);
 }
 
 void Material::UpdateUniformDescriptor(const MemoryBuffer* buffer, uint32 binding) const
@@ -171,7 +172,7 @@ void Material::UpdateUniformDescriptor(const MemoryBuffer* buffer, uint32 bindin
 		.pTexelBufferView = nullptr
 	};
 
-	vkUpdateDescriptorSets(Vulkan::Device(), 1, &write, 0, nullptr);
+	vkUpdateDescriptorSets(Vulkan::Device()->Logical(), 1, &write, 0, nullptr);
 }
 
 void Material::ValidatePipeline()

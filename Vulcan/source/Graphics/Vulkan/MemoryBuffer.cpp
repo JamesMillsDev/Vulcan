@@ -1,12 +1,13 @@
 #include "Graphics/Vulkan/MemoryBuffer.h"
 
+#include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/Vulkan.h"
 
 using namespace Vulcan;
 
-uint32 MemoryBuffer::GetMemoryType(uint32 typeBits, const VkMemoryPropertyFlags properties, const Vulkan* vulkan, VkBool32* memTypeFound)
+uint32 MemoryBuffer::GetMemoryType(uint32 typeBits, const VkMemoryPropertyFlags properties, const GraphicsDevice* device, VkBool32* memTypeFound)
 {
-	const VkPhysicalDeviceMemoryProperties memoryProperties = vulkan->GetMemoryProperties();
+	const VkPhysicalDeviceMemoryProperties memoryProperties = device->MemoryProperties();
 
 	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
 	{
@@ -33,11 +34,11 @@ uint32 MemoryBuffer::GetMemoryType(uint32 typeBits, const VkMemoryPropertyFlags 
 	throw std::runtime_error("Could not find a matching memory type");
 }
 
-MemoryBuffer::MemoryBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const void* data, const VkSharingMode sharingMode, const VkMemoryPropertyFlags flags, const Vulkan* vulkan)
+MemoryBuffer::MemoryBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const void* data, const VkSharingMode sharingMode, const VkMemoryPropertyFlags flags, const GraphicsDevice* device)
 	: m_size{ size }, m_buffer{ VK_NULL_HANDLE }, m_usage{ usage }, m_flags{ flags },
 	m_sharingMode{ sharingMode }, m_memory{ VK_NULL_HANDLE }, m_deviceAddress{ 0 }
 {
-	Create(data, vulkan);
+	Create(data, device);
 }
 
 MemoryBuffer::~MemoryBuffer()
@@ -45,14 +46,14 @@ MemoryBuffer::~MemoryBuffer()
 	Destroy();
 }
 
-VkResult MemoryBuffer::Bind(const VkDeviceSize offset, const Vulkan* vulkan) const
+VkResult MemoryBuffer::Bind(const VkDeviceSize offset, const GraphicsDevice* device) const
 {
-	if (vulkan == nullptr)
+	if (device == nullptr)
 	{
-		vulkan = Vulkan::Instance();
+		device = Vulkan::Device();
 	}
 
-	return vkBindBufferMemory(vulkan->GetDevice(), m_buffer, m_memory, offset);
+	return vkBindBufferMemory(device->Logical(), m_buffer, m_memory, offset);
 }
 
 void MemoryBuffer::Fill(const void* data, VkDeviceSize size, const VkDeviceSize offset, bool shouldFlush)
@@ -65,36 +66,36 @@ void MemoryBuffer::Fill(const void* data, VkDeviceSize size, const VkDeviceSize 
 	UnMap();
 }
 
-VkResult MemoryBuffer::Map(VkDeviceSize size, const VkDeviceSize offset, const Vulkan* vulkan)
+VkResult MemoryBuffer::Map(VkDeviceSize size, const VkDeviceSize offset, const GraphicsDevice* device)
 {
-	if (vulkan == nullptr)
+	if (device == nullptr)
 	{
-		vulkan = Vulkan::Instance();
+		device = Vulkan::Device();
 	}
 
 	size = size == 0 ? m_size : size;
-	return vkMapMemory(vulkan->GetDevice(), m_memory, offset, size, 0, &m_mapped);
+	return vkMapMemory(device->Logical(), m_memory, offset, size, 0, &m_mapped);
 }
 
-void MemoryBuffer::UnMap(const Vulkan* vulkan)
+void MemoryBuffer::UnMap(const GraphicsDevice* device)
 {
-	if (vulkan == nullptr)
+	if (device == nullptr)
 	{
-		vulkan = Vulkan::Instance();
+		device = Vulkan::Device();
 	}
 
 	if (m_mapped != nullptr)
 	{
-		vkUnmapMemory(vulkan->GetDevice(), m_memory);
+		vkUnmapMemory(device->Logical(), m_memory);
 		m_mapped = nullptr;
 	}
 }
 
-VkResult MemoryBuffer::Flush(VkDeviceSize size, const VkDeviceSize offset, const Vulkan* vulkan) const
+VkResult MemoryBuffer::Flush(VkDeviceSize size, const VkDeviceSize offset, const GraphicsDevice* device) const
 {
-	if (vulkan == nullptr)
+	if (device == nullptr)
 	{
-		vulkan = Vulkan::Instance();
+		device = Vulkan::Device();
 	}
 
 	size = size == 0 ? m_size : size;
@@ -108,14 +109,14 @@ VkResult MemoryBuffer::Flush(VkDeviceSize size, const VkDeviceSize offset, const
 			.size = size
 	};
 
-	return vkFlushMappedMemoryRanges(vulkan->GetDevice(), 1, &mappedRange);
+	return vkFlushMappedMemoryRanges(device->Logical(), 1, &mappedRange);
 }
 
-VkResult MemoryBuffer::Invalidate(VkDeviceSize size, const VkDeviceSize offset, const Vulkan* vulkan) const
+VkResult MemoryBuffer::Invalidate(VkDeviceSize size, const VkDeviceSize offset, const GraphicsDevice* device) const
 {
-	if (vulkan == nullptr)
+	if (device == nullptr)
 	{
-		vulkan = Vulkan::Instance();
+		device = Vulkan::Device();
 	}
 
 	size = size == 0 ? m_size : size;
@@ -129,7 +130,7 @@ VkResult MemoryBuffer::Invalidate(VkDeviceSize size, const VkDeviceSize offset, 
 			.size = size
 	};
 
-	return vkInvalidateMappedMemoryRanges(vulkan->GetDevice(), 1, &mappedRange);
+	return vkInvalidateMappedMemoryRanges(device->Logical(), 1, &mappedRange);
 }
 
 const VkBuffer& MemoryBuffer::Get() const
@@ -152,11 +153,11 @@ const VkDeviceSize& MemoryBuffer::Size() const
 	return m_size;
 }
 
-void MemoryBuffer::Create(const void* data, const Vulkan* vulkan)
+void MemoryBuffer::Create(const void* data, const GraphicsDevice* device)
 {
-	if (vulkan == nullptr)
+	if (device == nullptr)
 	{
-		vulkan = Vulkan::Instance();
+		device = Vulkan::Device();
 	}
 
 	VkResult result;
@@ -167,19 +168,19 @@ void MemoryBuffer::Create(const void* data, const Vulkan* vulkan)
 	createInfo.sharingMode = m_sharingMode;
 
 	// Attempt to allocate the memory
-	if (result = vkCreateBuffer(vulkan->GetDevice(), &createInfo, nullptr, &m_buffer);
+	if (result = vkCreateBuffer(device->Logical(), &createInfo, nullptr, &m_buffer);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Memory Buffer!", result);
 	}
 
 	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(vulkan->GetDevice(), m_buffer, &memoryRequirements);
+	vkGetBufferMemoryRequirements(device->Logical(), m_buffer, &memoryRequirements);
 
 	VkMemoryAllocateInfo memoryAllocateInfo = {};
 	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	memoryAllocateInfo.memoryTypeIndex = GetMemoryType(memoryRequirements.memoryTypeBits, m_flags, vulkan);
+	memoryAllocateInfo.memoryTypeIndex = GetMemoryType(memoryRequirements.memoryTypeBits, m_flags, device);
 
 	VkMemoryAllocateFlagsInfoKHR allocateFlagsInfo{};
 
@@ -192,14 +193,14 @@ void MemoryBuffer::Create(const void* data, const Vulkan* vulkan)
 			.pNext = nullptr,
 			.buffer = m_buffer
 		};
-		m_deviceAddress = vkGetBufferDeviceAddress(vulkan->GetDevice(), &deviceAddressInfo);
+		m_deviceAddress = vkGetBufferDeviceAddress(device->Logical(), &deviceAddressInfo);
 
 		allocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
 		allocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
 		memoryAllocateInfo.pNext = &allocateFlagsInfo;
 	}
 
-	if (result = vkAllocateMemory(vulkan->GetDevice(), &memoryAllocateInfo, nullptr, &m_memory);
+	if (result = vkAllocateMemory(device->Logical(), &memoryAllocateInfo, nullptr, &m_memory);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to allocate Memory Buffer!", result);
@@ -207,7 +208,7 @@ void MemoryBuffer::Create(const void* data, const Vulkan* vulkan)
 
 	if (data != nullptr)
 	{
-		if (result = Map(0, 0, vulkan); result != VK_SUCCESS)
+		if (result = Map(0, 0, device); result != VK_SUCCESS)
 		{
 			throw Vulkan::VulkanError("Failed to map Memory Buffer!", result);
 		}
@@ -216,13 +217,13 @@ void MemoryBuffer::Create(const void* data, const Vulkan* vulkan)
 
 		if ((m_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
 		{
-			(void)Flush(0, 0, vulkan);
+			(void)Flush(0, 0, device);
 		}
 
-		UnMap(vulkan);
+		UnMap(device);
 	}
 
-	if (result = Bind(0, vulkan); result != VK_SUCCESS)
+	if (result = Bind(0, device); result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to bind buffer memory!", result);
 	}
@@ -237,17 +238,19 @@ void MemoryBuffer::Create(const void* data, const Vulkan* vulkan)
 
 void MemoryBuffer::Destroy()
 {
+	const GraphicsDevice* device = Vulkan::Device();
+
 	UnMap();
 
 	if (m_buffer != nullptr)
 	{
-		vkDestroyBuffer(Vulkan::Device(), m_buffer, nullptr);
+		vkDestroyBuffer(device->Logical(), m_buffer, nullptr);
 		m_buffer = VK_NULL_HANDLE;
 	}
 
 	if (m_memory != nullptr)
 	{
-		vkFreeMemory(Vulkan::Device(), m_memory, nullptr);
+		vkFreeMemory(device->Logical(), m_memory, nullptr);
 		m_memory = VK_NULL_HANDLE;
 	}
 }

@@ -8,6 +8,7 @@
 #include "Graphics/Rendering/Camera.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
+#include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
 
@@ -88,7 +89,7 @@ void Renderer::DestroyVulkan()
 
 void Renderer::WaitIdle()
 {
-	vkDeviceWaitIdle(Vulkan::Device());
+	vkDeviceWaitIdle(Vulkan::Device()->Logical());
 }
 
 Renderer::Renderer(Config* config, GLFWwindow* window)
@@ -99,17 +100,24 @@ Renderer::Renderer(Config* config, GLFWwindow* window)
 
 	m_vulkan = Vulkan::Instance();
 
-	const uint64 bufferSize = MAX_VISIBLE_OBJECTS * m_vulkan->GetDynamicAlignment();
-	m_transforms = static_cast<mat4*>(alignedAlloc(bufferSize, m_vulkan->GetDynamicAlignment()));
+	uint64 dynamicAlignment = m_vulkan->GetDevice()->DynamicAlignment<mat4>();
+	uint64 bufferSize = MAX_VISIBLE_OBJECTS * dynamicAlignment;
+	m_transforms = static_cast<mat4*>(alignedAlloc(bufferSize, dynamicAlignment));
 	m_transformBuffer = new MemoryBuffer{ bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_transforms, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT };
 
-	m_materials = static_cast<MaterialUniform*>(alignedAlloc(bufferSize, m_vulkan->GetDynamicAlignment()));
+	dynamicAlignment = m_vulkan->GetDevice()->DynamicAlignment<MaterialUniform>();
+	bufferSize = MAX_VISIBLE_OBJECTS * dynamicAlignment;
+	m_materials = static_cast<MaterialUniform*>(alignedAlloc(bufferSize, dynamicAlignment));
 	m_materialBuffer = new MemoryBuffer{ bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_materials, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT };
 }
 
 Renderer::~Renderer()
 {
 	alignedFree(m_transforms);
+	alignedFree(m_materials);
+
+	delete m_transformBuffer;
+	delete m_materialBuffer;
 
 	DestroyVulkan();
 }

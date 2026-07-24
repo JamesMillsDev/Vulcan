@@ -13,6 +13,7 @@
 #include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Texture.h"
+#include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Swapchain.h"
 #include "ImGui/imgui.h"
@@ -119,14 +120,6 @@ namespace
 	}
 }
 
-static void Try(const VkResult result, const string& errorMsg)  // NOLINT(misc-use-anonymous-namespace)
-{
-	if (result != VK_SUCCESS)
-	{
-		throw Vulkan::VulkanError(errorMsg, result);
-	}
-}
-
 void CheckSwapChain(const VkResult result, const string& errorMsg) // NOLINT(misc-use-anonymous-namespace, clang-diagnostic-microsoft-redeclare-static)
 {
 	if (result != VK_SUCCESS)
@@ -148,12 +141,12 @@ Vulkan* Vulkan::Instance()
 	return m_instance;
 }
 
-const VkDevice& Vulkan::Device()
+const GraphicsDevice* Vulkan::Device()
 {
 	return m_instance->GetDevice();
 }
 
-const VkDevice& Vulkan::GetDevice() const
+const GraphicsDevice* Vulkan::GetDevice() const
 {
 	return m_device;
 }
@@ -166,36 +159,6 @@ const VmaAllocator& Vulkan::Allocator()
 const VmaAllocator& Vulkan::GetAllocator() const
 {
 	return m_vmaAllocator;
-}
-
-const VkPhysicalDeviceProperties& Vulkan::DeviceProperties()
-{
-	return m_instance->GetDeviceProperties();
-}
-
-const VkPhysicalDeviceProperties& Vulkan::GetDeviceProperties() const
-{
-	return m_deviceProperties;
-}
-
-const VkPhysicalDeviceMemoryProperties& Vulkan::MemoryProperties()
-{
-	return m_instance->GetMemoryProperties();
-}
-
-const VkPhysicalDeviceMemoryProperties& Vulkan::GetMemoryProperties() const
-{
-	return m_memoryProperties;
-}
-
-const uint64& Vulkan::DynamicAlignment()
-{
-	return m_instance->GetDynamicAlignment();
-}
-
-const uint64& Vulkan::GetDynamicAlignment() const
-{
-	return m_dynamicAlignment;
 }
 
 bool Vulkan::IsLoaded()
@@ -272,7 +235,7 @@ void Vulkan::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 
 Vulkan::Vulkan(Config* config, GLFWwindow* window)
 	: recreateSwapChain{ false }, m_resourceStack{ new ResourceStack }, m_loaded{ false },
-	m_frameIndex{ 0 }, m_imageIndex{ 0 }, m_dynamicAlignment{ 0 }
+	m_frameIndex{ 0 }, m_imageIndex{ 0 }
 {
 	m_appName = config->Get<string>("Application.Title");
 	m_appVersion = new Version{ "Application.Version", config };
@@ -298,7 +261,7 @@ void Vulkan::BeginOneTimeCommand(VkCommandBuffer& buffer, VkFence& fence) const
 	// Attempt to create the one-time fence
 	VkFenceCreateInfo fenceCreateInfo{};
 	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	if (result = vkCreateFence(m_device, &fenceCreateInfo, nullptr, &fence);
+	if (result = vkCreateFence(m_device->Logical(), &fenceCreateInfo, nullptr, &fence);
 		result != VK_SUCCESS)
 	{
 		throw VulkanError("Failed to create One-Time Fence!", result);
@@ -310,7 +273,7 @@ void Vulkan::BeginOneTimeCommand(VkCommandBuffer& buffer, VkFence& fence) const
 	cbAllocateInfo.commandPool = m_commandPool;
 	cbAllocateInfo.commandBufferCount = 1;
 
-	if (result = vkAllocateCommandBuffers(m_device, &cbAllocateInfo, &buffer);
+	if (result = vkAllocateCommandBuffers(m_device->Logical(), &cbAllocateInfo, &buffer);
 		result != VK_SUCCESS)
 	{
 		throw VulkanError("Failed to create One-Time Command Buffer!", result);
@@ -343,18 +306,18 @@ void Vulkan::EndOneTimeCommand(const VkCommandBuffer& buffer, const VkFence& fen
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &buffer;
 
-	if (result = vkQueueSubmit(m_queue, 1, &submitInfo, fence); result != VK_SUCCESS)
+	if (result = vkQueueSubmit(m_device->Queue(), 1, &submitInfo, fence); result != VK_SUCCESS)
 	{
 		throw VulkanError("Failed to submit One-Time Command!", result);
 	}
 
 	// Wait for the fences to finish
-	if (result = vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX); result != VK_SUCCESS)
+	if (result = vkWaitForFences(m_device->Logical(), 1, &fence, VK_TRUE, UINT64_MAX); result != VK_SUCCESS)
 	{
 		throw VulkanError("Fence timed out!", result);
 	}
 
-	vkDestroyFence(m_device, fence, nullptr);
+	vkDestroyFence(m_device->Logical(), fence, nullptr);
 }
 
 MemoryBuffer* Vulkan::GetUniformBuffer(const uint16 id, const uint32 index) const
@@ -377,7 +340,7 @@ VkFormat Vulkan::GetDepthFormat() const
 		// Get the device format properties
 		VkFormatProperties2 formatProperties{};
 		formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-		vkGetPhysicalDeviceFormatProperties2(m_physicalDevice, format, &formatProperties);
+		vkGetPhysicalDeviceFormatProperties2(m_device->Physical(), format, &formatProperties);
 
 		// If this format properties contains the tiling features we want, store and break
 		if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -478,120 +441,11 @@ void Vulkan::Init(GLFWwindow* window)
 		InitAndPushResource(
 			[this]
 			{
-				// Get a list and number of all GPU's attached to the computer
-				uint32 deviceCount = 0;
-				vkEnumeratePhysicalDevices(m_vkInstance, &deviceCount, nullptr);
-				vector<VkPhysicalDevice> devices(deviceCount);
-				vkEnumeratePhysicalDevices(m_vkInstance, &deviceCount, devices.data());
-
-				// Get the properties of the device
-				m_physicalDevice = devices[0];
-				VkPhysicalDeviceProperties2 deviceProperties
-				{
-					.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-					.pNext = nullptr,
-					.properties = {}
-				};
-				vkGetPhysicalDeviceProperties2(m_physicalDevice, &deviceProperties);
-				m_deviceProperties = deviceProperties.properties;
-
-				vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_memoryProperties);
-
-				const uint64 minUboAlignment = m_deviceProperties.limits.minUniformBufferOffsetAlignment;
-				m_dynamicAlignment = sizeof(mat4);
-				if (minUboAlignment > 0)
-				{
-					m_dynamicAlignment = (m_dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
-				}
-
-				// Get all the device's queue families
-				uint32 queueFamilyCount = 0;
-				vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyCount, nullptr);
-				vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-				vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-				// Get the graphics queue family index
-				m_queueFamily = 0;
-				for (uint32 i = 0; i < queueFamilyCount; ++i)
-				{
-					if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-					{
-						m_queueFamily = i;
-						break;
-					}
-				}
-
-				// Validate the queue family support
-				if (glfwGetPhysicalDevicePresentationSupport(m_vkInstance, m_physicalDevice, m_queueFamily) == GLFW_FALSE)
-				{
-					throw runtime_error("GLFW does not support presentation on this queue family!");
-				}
-
-				// Generate the queue create info with a 100% priority
-				constexpr float qfPriorities = 1.f;
-				VkDeviceQueueCreateInfo queueCI
-				{
-					.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-					.pNext = nullptr,
-					.flags = 0,
-					.queueFamilyIndex = m_queueFamily,
-					.queueCount = 1,
-					.pQueuePriorities = &qfPriorities,
-				};
-
-				// Generate the feature and extension supports we need
-				const vector deviceExtensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-				VkPhysicalDeviceVulkan11Features enabledVk11Features{};
-				enabledVk11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-				enabledVk11Features.variablePointers = true;
-				enabledVk11Features.variablePointersStorageBuffer = true;
-
-				VkPhysicalDeviceVulkan12Features enabledVk12Features{};
-				enabledVk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-				enabledVk12Features.pNext = &enabledVk11Features;
-				enabledVk12Features.descriptorIndexing = true;
-				enabledVk12Features.shaderSampledImageArrayNonUniformIndexing = true;
-				enabledVk12Features.descriptorBindingUniformBufferUpdateAfterBind = true;
-				enabledVk12Features.descriptorBindingVariableDescriptorCount = true;
-				enabledVk12Features.runtimeDescriptorArray = true;
-				enabledVk12Features.bufferDeviceAddress = true;
-				enabledVk12Features.descriptorBindingSampledImageUpdateAfterBind = true;
-				enabledVk12Features.descriptorBindingPartiallyBound = true;
-
-				VkPhysicalDeviceVulkan13Features enabledVk13Features{};
-				enabledVk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-				enabledVk13Features.pNext = &enabledVk12Features;
-				enabledVk13Features.synchronization2 = true;
-				enabledVk13Features.dynamicRendering = true;
-
-				VkPhysicalDeviceFeatures enabledVk10Features{};
-				enabledVk10Features.samplerAnisotropy = true;
-
-				// Generate the device create info with the above parameters
-				const VkDeviceCreateInfo deviceCI
-				{
-					.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-					.pNext = &enabledVk13Features,
-					.flags = 0,
-					.queueCreateInfoCount = 1,
-					.pQueueCreateInfos = &queueCI,
-					.enabledLayerCount = 0, // DEPRECATED
-					.ppEnabledLayerNames = nullptr, // DEPRECATED
-					.enabledExtensionCount = static_cast<uint32>(deviceExtensions.size()),
-					.ppEnabledExtensionNames = deviceExtensions.data(),
-					.pEnabledFeatures = &enabledVk10Features
-				};
-
-				// Attempt to create the device and get the graphics queue
-				Try(
-					vkCreateDevice(m_physicalDevice, &deviceCI, nullptr, &m_device),
-					"Failed to create Logical Device!"
-				);
-				vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
+				m_device = new GraphicsDevice{ m_vkInstance };
 			},
 			[this]
 			{
-				vkDestroyDevice(m_device, nullptr);
+				delete m_device;
 			}
 		);
 
@@ -606,8 +460,8 @@ void Vulkan::Init(GLFWwindow* window)
 
 				VmaAllocatorCreateInfo allocatorCI{};
 				allocatorCI.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-				allocatorCI.physicalDevice = m_physicalDevice;
-				allocatorCI.device = m_device;
+				allocatorCI.physicalDevice = m_device->Physical();
+				allocatorCI.device = m_device->Logical();
 				allocatorCI.pVulkanFunctions = &vkFunctions;
 				allocatorCI.instance = m_vkInstance;
 
@@ -622,52 +476,16 @@ void Vulkan::Init(GLFWwindow* window)
 			}
 		);
 
-		// Surface
-		InitAndPushResource(
-			[this, window]
-			{
-				Try(
-					glfwCreateWindowSurface(m_vkInstance, window, nullptr, &m_surface),
-					"Failed to create window surface!"
-				);
-			},
-			[this]
-			{
-				vkDestroySurfaceKHR(m_vkInstance, m_surface, nullptr);
-			}
-		);
-
 		// Swap chain / swap chain images
 		InitAndPushResource(
 			[this]
 			{
 				const Window* win = Application::GetWindow();
-				m_swapChain = new SwapChain{ win, m_physicalDevice, m_device, m_surface };
+				m_swapChain = new SwapChain{ win, m_device, m_vkInstance, m_vmaAllocator, GetDepthFormat() };
 			},
 			[this]
 			{
 				delete m_swapChain;
-			}
-		);
-
-		// Depth image
-		InitAndPushResource(
-			[this, window]
-			{
-				// Get the GLFW window size
-				int windowW, windowH;
-				glfwGetWindowSize(window, &windowW, &windowH);
-
-				// Set up the image create info for the depth image
-				CreateDepthImage(
-					{ .width = static_cast<uint32_t>(windowW), .height = static_cast<uint32_t>(windowH), .depth = 1 },
-					GetDepthFormat()
-				);
-			},
-			[this]
-			{
-				vkDestroyImageView(m_device, m_depthImageView, nullptr);
-				vmaDestroyImage(m_vmaAllocator, m_depthImage, m_depthImageAllocation);
 			}
 		);
 
@@ -695,7 +513,7 @@ void Vulkan::Init(GLFWwindow* window)
 									nullptr,
 									VK_SHARING_MODE_EXCLUSIVE,
 									VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-									this
+									m_device
 								});
 						}
 
@@ -723,59 +541,6 @@ void Vulkan::Init(GLFWwindow* window)
 			}
 		);
 
-		// Fences and semaphores
-		InitAndPushResource(
-			[this]
-			{
-				VkSemaphoreCreateInfo semaphoreCreateInfo{};
-				semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-				// Make sure the fence will be signaled for the first frame
-				VkFenceCreateInfo fenceCreateInfo{};
-				fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-				fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-				// Create a fence and an image semaphore for each frame in flight
-				for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-				{
-					Try(
-						vkCreateFence(m_device, &fenceCreateInfo, nullptr, &m_fences[i]),
-						std::format("Failed to create Fence for frame: {}!", i)
-					);
-
-					Try(
-						vkCreateSemaphore(m_device, &semaphoreCreateInfo, nullptr, &m_imageAcquiredSemaphores[i]),
-						std::format("Failed to create Image Acquired Semaphore for frame: {}!", i)
-					);
-				}
-
-				// Match the size of the render complete semaphores to the swap chain images
-				m_renderCompleteSemaphores.Resize(m_swapChain->m_swapChainImages.Count());
-				for (VkSemaphore& semaphore : m_renderCompleteSemaphores)
-				{
-					Try(
-						vkCreateSemaphore(m_device, &semaphoreCreateInfo, nullptr, &semaphore),
-						"Failed to create Render Complete Semaphore!"
-					);
-				}
-			},
-			[this]
-			{
-				for (const VkSemaphore& semaphore : m_renderCompleteSemaphores)
-				{
-					vkDestroySemaphore(m_device, semaphore, nullptr);
-				}
-
-				m_renderCompleteSemaphores.Clear();
-
-				for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-				{
-					vkDestroySemaphore(m_device, m_imageAcquiredSemaphores[i], nullptr);
-					vkDestroyFence(m_device, m_fences[i], nullptr);
-				}
-			}
-		);
-
 		// Command buffers
 		InitAndPushResource(
 			[this]
@@ -784,10 +549,10 @@ void Vulkan::Init(GLFWwindow* window)
 				VkCommandPoolCreateInfo cpCreateInfo{};
 				cpCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 				cpCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-				cpCreateInfo.queueFamilyIndex = m_queueFamily;
+				cpCreateInfo.queueFamilyIndex = m_device->QueueFamily();
 
 				Try(
-					vkCreateCommandPool(m_device, &cpCreateInfo, nullptr, &m_commandPool),
+					vkCreateCommandPool(m_device->Logical(), &cpCreateInfo, nullptr, &m_commandPool),
 					"Failed to create Command Pool!"
 				);
 
@@ -798,13 +563,13 @@ void Vulkan::Init(GLFWwindow* window)
 				cbAllocateInfo.commandPool = m_commandPool;
 
 				Try(
-					vkAllocateCommandBuffers(m_device, &cbAllocateInfo, m_commandBuffers.Data()),
+					vkAllocateCommandBuffers(m_device->Logical(), &cbAllocateInfo, m_commandBuffers.Data()),
 					"Failed to create Command Buffers!"
 				);
 			},
 			[this]
 			{
-				vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+				vkDestroyCommandPool(m_device->Logical(), m_commandPool, nullptr);
 			}
 		);
 
@@ -838,7 +603,7 @@ void Vulkan::Init(GLFWwindow* window)
 				};
 
 				Try(
-					vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_imguiPool),
+					vkCreateDescriptorPool(m_device->Logical(), &poolInfo, nullptr, &m_imguiPool),
 					"Failed to create ImGui Descriptor Pool!"
 				);
 
@@ -849,9 +614,9 @@ void Vulkan::Init(GLFWwindow* window)
 
 				ImGui_ImplVulkan_InitInfo initInfo{};
 				initInfo.Instance = m_vkInstance;
-				initInfo.PhysicalDevice = m_physicalDevice;
-				initInfo.Device = m_device;
-				initInfo.Queue = m_queue;
+				initInfo.PhysicalDevice = m_device->Physical();
+				initInfo.Device = m_device->Logical();
+				initInfo.Queue = m_device->Queue();
 				initInfo.DescriptorPool = m_imguiPool;
 				initInfo.MinImageCount = 3;
 				initInfo.ImageCount = 3;
@@ -877,7 +642,7 @@ void Vulkan::Init(GLFWwindow* window)
 			[this]
 			{
 				ImGui_ImplVulkan_Shutdown();
-				vkDestroyDescriptorPool(m_device, m_imguiPool, nullptr);
+				vkDestroyDescriptorPool(m_device->Logical(), m_imguiPool, nullptr);
 				ImGui_ImplGlfw_Shutdown();
 
 				ImGui::DestroyContext();
@@ -885,7 +650,7 @@ void Vulkan::Init(GLFWwindow* window)
 		);
 
 		// Set the resize callback
-		glfwSetWindowSizeCallback(window, [](GLFWwindow* win, const int w, const int h)
+		glfwSetWindowSizeCallback(window, [](GLFWwindow* _, const int w, const int h)
 			{
 				Application::GetWindow()->SetWidth(w);
 				Application::GetWindow()->SetHeight(h);
@@ -902,20 +667,12 @@ void Vulkan::Init(GLFWwindow* window)
 	}
 }
 
-void Vulkan::RecreateSwapChain()
+void Vulkan::RecreateSwapChain() const
 {
-	vkDeviceWaitIdle(m_device);
+	vkDeviceWaitIdle(m_device->Logical());
 
 	const Window* window = Application::GetWindow();
-	m_swapChain->Recreate(window, m_renderCompleteSemaphores);
-
-	vmaDestroyImage(m_vmaAllocator, m_depthImage, m_depthImageAllocation);
-	vkDestroyImageView(m_device, m_depthImageView, nullptr);
-
-	CreateDepthImage(
-		{ .width = static_cast<uint32>(window->Width()), .height = static_cast<uint32>(window->Height()), .depth = 1 },
-		GetDepthFormat()
-	);
+	m_swapChain->Recreate(window, GetDepthFormat());
 }
 
 VkCommandBuffer Vulkan::BeginFrame()
@@ -929,17 +686,17 @@ VkCommandBuffer Vulkan::BeginFrame()
 
 	// Wait on and reset fences
 	Try(
-		vkWaitForFences(m_device, 1, &m_fences[m_frameIndex], true, UINT64_MAX),
+		vkWaitForFences(m_device->Logical(), 1, m_swapChain->GetFenceForFrame(m_frameIndex), true, UINT64_MAX),
 		std::format("Failed to wait for fence on frame: {}!", m_frameIndex)
 	);
 	Try(
-		vkResetFences(m_device, 1, &m_fences[m_frameIndex]),
+		vkResetFences(m_device->Logical(), 1, m_swapChain->GetFenceForFrame(m_frameIndex)),
 		std::format("Failed to reset fence on frame: {}!", m_frameIndex)
 	);
 
 	// Try to get the swap chain image index for this frame
 	CheckSwapChain(
-		m_swapChain->AcquireNextImage(&m_imageIndex, m_imageAcquiredSemaphores[m_frameIndex]),
+		m_swapChain->AcquireNextImage(&m_imageIndex, m_frameIndex),
 		std::format("Failed to acquire Swap Chain Image index for frame: {}!", m_frameIndex)
 	);
 
@@ -960,7 +717,7 @@ VkCommandBuffer Vulkan::BeginFrame()
 	);
 
 	// Transition swap chain and depth images
-	TransitionFrameImages(cmdBuf);
+	m_swapChain->TransitionFrameImages(cmdBuf, m_frameIndex);
 
 	// Begin rendering
 	VkRenderingAttachmentInfo colorAttachmentInfo{};
@@ -976,7 +733,7 @@ VkCommandBuffer Vulkan::BeginFrame()
 
 	VkRenderingAttachmentInfo depthAttachmentInfo{};
 	depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachmentInfo.imageView = m_depthImageView;
+	depthAttachmentInfo.imageView = m_swapChain->GetDepthImageView();
 	depthAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 	depthAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -1058,15 +815,15 @@ void Vulkan::EndFrame(VkCommandBuffer cmdBuffer)
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.pNext = nullptr,
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &m_imageAcquiredSemaphores[m_frameIndex],
+		.pWaitSemaphores = m_swapChain->GetSemaphoreForFrame(m_frameIndex),
 		.pWaitDstStageMask = &waitStages,
 		.commandBufferCount = 1,
 		.pCommandBuffers = &cmdBuffer,
 		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &m_renderCompleteSemaphores[m_imageIndex]
+		.pSignalSemaphores = m_swapChain->GetRenderCompleteSemaphoreForFrame(m_imageIndex)
 	};
 	Try(
-		vkQueueSubmit(m_queue, 1, &submitInfo, m_fences[m_frameIndex]),
+		vkQueueSubmit(m_device->Queue(), 1, &submitInfo, *m_swapChain->GetFenceForFrame(m_frameIndex)),
 		std::format("Failed to submit queue for frame: {}!", m_frameIndex)
 	);
 
@@ -1077,114 +834,15 @@ void Vulkan::EndFrame(VkCommandBuffer cmdBuffer)
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.pNext = nullptr,
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &m_renderCompleteSemaphores[m_imageIndex],
+		.pWaitSemaphores = m_swapChain->GetRenderCompleteSemaphoreForFrame(m_imageIndex),
 		.swapchainCount = 1,
 		.pSwapchains = m_swapChain->GetSwapChain(),
 		.pImageIndices = &m_imageIndex,
 		.pResults = nullptr
 	};
 	CheckSwapChain(
-		vkQueuePresentKHR(m_queue, &presentInfo),
+		vkQueuePresentKHR(m_device->Queue(), &presentInfo),
 		std::format("Failed to present queue for frame: {}!", m_frameIndex)
-	);
-}
-
-void Vulkan::TransitionFrameImages(const VkCommandBuffer cmdBuffer) const
-{
-	const TArray outputBarriers
-	{
-		VkImageMemoryBarrier2
-		{
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-			.pNext = nullptr,
-			.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.srcAccessMask = 0,
-			.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-			.srcQueueFamilyIndex = 0,
-			.dstQueueFamilyIndex = 0,
-			.image = m_swapChain->GetImage(m_imageIndex),
-			.subresourceRange =
-			{
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1
-			}
-		},
-		VkImageMemoryBarrier2
-		{
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-			.pNext = nullptr,
-			.srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-			.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-			.dstStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-			.srcQueueFamilyIndex = 0,
-			.dstQueueFamilyIndex = 0,
-			.image = m_depthImage,
-			.subresourceRange =
-			{
-				.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1
-			}
-		}
-	};
-	VkDependencyInfo barrierDependencyInfo{};
-	barrierDependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-	barrierDependencyInfo.imageMemoryBarrierCount = static_cast<uint32>(outputBarriers.size());
-	barrierDependencyInfo.pImageMemoryBarriers = outputBarriers.Data();
-	vkCmdPipelineBarrier2(cmdBuffer, &barrierDependencyInfo);
-}
-
-void Vulkan::CreateDepthImage(const VkExtent3D& extent, const VkFormat& format)
-{
-	VkImageCreateInfo depthImageCI{};
-	depthImageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	depthImageCI.imageType = VK_IMAGE_TYPE_2D;
-	depthImageCI.format = format;
-	depthImageCI.extent = extent;
-	depthImageCI.mipLevels = 1;
-	depthImageCI.arrayLayers = 1;
-	depthImageCI.samples = VK_SAMPLE_COUNT_1_BIT;
-	depthImageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-	depthImageCI.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	depthImageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-	VmaAllocationCreateInfo allocCI{};
-	allocCI.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
-	allocCI.usage = VMA_MEMORY_USAGE_AUTO;
-
-	// Attempt to create the depth image
-	Try(
-		vmaCreateImage(m_vmaAllocator, &depthImageCI, &allocCI, &m_depthImage, &m_depthImageAllocation, nullptr),
-		"Failed to create Depth Image!"
-	);
-
-	VkImageViewCreateInfo depthViewCI
-	{
-		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.pNext = nullptr,
-		.flags = 0,
-		.image = m_depthImage,
-		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = format,
-		.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-		.subresourceRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1 }
-	};
-
-	// Attempt to create the depth image view
-	Try(
-		vkCreateImageView(m_device, &depthViewCI, nullptr, &m_depthImageView),
-		"Failed to create Depth Image View!"
 	);
 }
 

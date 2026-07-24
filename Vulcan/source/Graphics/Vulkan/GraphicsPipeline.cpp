@@ -5,6 +5,7 @@
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
 #include "Graphics/Rendering/Shader.h"
+#include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/Vulkan.h"
 
 using namespace Vulcan;
@@ -39,7 +40,7 @@ bool GraphicsPipelineConfig::ContainsStage(const VkShaderStageFlagBits stage) co
 GraphicsPipeline::GraphicsPipeline(GraphicsPipelineConfig config) :
 	m_config{ std::move(config) }, m_bindPoint{ VK_PIPELINE_BIND_POINT_GRAPHICS }
 {
-	Init(Vulkan::Instance());
+	Init(Vulkan::Device()->Logical());
 }
 
 GraphicsPipeline::~GraphicsPipeline()
@@ -51,8 +52,8 @@ void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, const uint32 object
 {
 	TArray dynamicOffsets = 
 	{
-		objectIndex * static_cast<uint32>(Vulkan::DynamicAlignment()),
-		objectIndex * static_cast<uint32>(Vulkan::DynamicAlignment()),
+		objectIndex * static_cast<uint32>(Vulkan::Device()->DynamicAlignment<mat4>()),
+		objectIndex * static_cast<uint32>(Vulkan::Device()->DynamicAlignment<MaterialUniform>()),
 	};
 
 	vkCmdBindDescriptorSets(
@@ -73,25 +74,27 @@ VkDescriptorSet GraphicsPipeline::GetDescriptorSet() const
 	return m_descriptorSets;
 }
 
-void GraphicsPipeline::Init(Vulkan* vulkan)
+void GraphicsPipeline::Init(const VkDevice& device)
 {
-	InitDescriptors(vulkan);
-	InitPipeline(vulkan);
+	InitDescriptors(device);
+	InitPipeline(device);
 }
 
 void GraphicsPipeline::Destroy()
 {
-	vkDestroyDescriptorPool(Vulkan::Device(), m_descriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(Vulkan::Device(), m_descriptorSetLayout, nullptr);
+	const GraphicsDevice* device = Vulkan::Device();
 
-	vkDestroyPipeline(Vulkan::Device(), m_pipeline, nullptr);
-	vkDestroyPipelineLayout(Vulkan::Device(), m_pipelineLayout, nullptr);
+	vkDestroyDescriptorPool(device->Logical(), m_descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(device->Logical(), m_descriptorSetLayout, nullptr);
+
+	vkDestroyPipeline(device->Logical(), m_pipeline, nullptr);
+	vkDestroyPipelineLayout(device->Logical(), m_pipelineLayout, nullptr);
 
 	m_pipelineLayout = VK_NULL_HANDLE;
 	m_pipeline = VK_NULL_HANDLE;
 }
 
-void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
+void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 {
 	VkResult result;
 
@@ -206,7 +209,7 @@ void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 		.pBindings = dslBindings.Data()
 	};
 
-	if (result = vkCreateDescriptorSetLayout(vulkan->GetDevice(), &dslCreateInfo, nullptr, &m_descriptorSetLayout);
+	if (result = vkCreateDescriptorSetLayout(device, &dslCreateInfo, nullptr, &m_descriptorSetLayout);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Descriptor Set Layout!", result);
@@ -222,7 +225,7 @@ void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 		.pPoolSizes = poolSizes.Data()
 	};
 
-	if (result = vkCreateDescriptorPool(vulkan->GetDevice(), &dpCreateInfo, nullptr, &m_descriptorPool);
+	if (result = vkCreateDescriptorPool(device, &dpCreateInfo, nullptr, &m_descriptorPool);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Descriptor Pool!", result);
@@ -247,14 +250,14 @@ void GraphicsPipeline::InitDescriptors(const Vulkan* vulkan)
 		.pSetLayouts = &m_descriptorSetLayout
 	};
 
-	if (result = vkAllocateDescriptorSets(vulkan->GetDevice(), &dsAllocateInfo, &m_descriptorSets);
+	if (result = vkAllocateDescriptorSets(device, &dsAllocateInfo, &m_descriptorSets);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Descriptor Pool!", result);
 	}
 }
 
-void GraphicsPipeline::InitPipeline(Vulkan* vulkan)
+void GraphicsPipeline::InitPipeline(const VkDevice& device)
 {
 	VkResult result;
 	// Attempt to create the pipeline layout
@@ -269,7 +272,7 @@ void GraphicsPipeline::InitPipeline(Vulkan* vulkan)
 		.pPushConstantRanges = nullptr
 	};
 
-	if (result = vkCreatePipelineLayout(vulkan->GetDevice(), &plCreateInfo, nullptr, &m_pipelineLayout);
+	if (result = vkCreatePipelineLayout(device, &plCreateInfo, nullptr, &m_pipelineLayout);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Pipeline Layout!", result);
@@ -390,7 +393,7 @@ void GraphicsPipeline::InitPipeline(Vulkan* vulkan)
 	pCreateInfo.layout = m_pipelineLayout;
 
 	// Attempt to create the pipeline
-	if (result = vkCreateGraphicsPipelines(vulkan->GetDevice(), nullptr, 1, &pCreateInfo, nullptr, &m_pipeline);
+	if (result = vkCreateGraphicsPipelines(device, nullptr, 1, &pCreateInfo, nullptr, &m_pipeline);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Graphics Pipeline!", result);

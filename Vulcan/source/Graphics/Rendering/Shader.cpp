@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "Resources.h"
+#include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/Vulkan.h"
 
 using std::ifstream;
@@ -36,7 +37,7 @@ TList<char> Shader::ReadShaderFile(const string& fileName)
 Shader::Shader(string path)
 	: m_path{ std::move(path) }, m_shaderModule{ VK_NULL_HANDLE }
 {
-	Init(Vulkan::Instance());
+	Init(Vulkan::Device());
 }
 
 Shader::~Shader()
@@ -49,7 +50,7 @@ const VkShaderModule& Shader::GetShaderModule() const
 	return m_shaderModule;
 }
 
-void Shader::Init(const Vulkan* vulkan)
+void Shader::Init(const GraphicsDevice* device)
 {
 	const string path = m_path + ".spv";
 	ResourceData shaderData = Resources::Find(path);
@@ -63,7 +64,8 @@ void Shader::Init(const Vulkan* vulkan)
 		.codeSize = static_cast<uint64>(shaderData.length),
 		.pCode = reinterpret_cast<uint32*>(shaderData.data)
 	};
-	if (const VkResult result = vkCreateShaderModule(vulkan->GetDevice(), &smCreateInfo, nullptr, &m_shaderModule);
+
+	if (const VkResult result = vkCreateShaderModule(device->Logical(), &smCreateInfo, nullptr, &m_shaderModule);
 		result != VK_SUCCESS)
 	{
 		throw Vulkan::VulkanError("Failed to create Shader Module!", result);
@@ -72,6 +74,6 @@ void Shader::Init(const Vulkan* vulkan)
 
 void Shader::Destroy()
 {
-	vkDestroyShaderModule(Vulkan::Device(), m_shaderModule, nullptr);
+	vkDestroyShaderModule(Vulkan::Device()->Logical(), m_shaderModule, nullptr);
 	m_shaderModule = VK_NULL_HANDLE;
 }

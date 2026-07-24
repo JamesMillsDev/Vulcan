@@ -113,11 +113,11 @@ namespace Vulcan
 		VkDescriptorSet GetDescriptorSet() const;
 
 	private:
-		void Init(Vulkan* vulkan);
+		void Init(const VkDevice& device);
 		void Destroy();
 
-		void InitDescriptors(const Vulkan* vulkan);
-		void InitPipeline(Vulkan* vulkan);
+		void InitDescriptors(const VkDevice& device);
+		void InitPipeline(const VkDevice& device);
 
 	};
 }

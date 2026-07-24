@@ -9,6 +9,7 @@ using std::string;
 
 namespace Vulcan
 {
+	class GraphicsDevice;
 	class Vulkan;
 
 	class Shader
@@ -29,7 +30,7 @@ namespace Vulcan
 		[[nodiscard]] const VkShaderModule& GetShaderModule() const;
 
 	private:
-		void Init(const Vulkan* vulkan);
+		void Init(const GraphicsDevice* device);
 		void Destroy();
 
 	};
