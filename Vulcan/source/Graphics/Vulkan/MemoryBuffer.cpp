@@ -64,6 +64,14 @@ void MemoryBuffer::Fill(const void* data, VkDeviceSize size, const VkDeviceSize 
 	memcpy(static_cast<char*>(m_mapped) + offset, data, size);
 
 	UnMap();
+
+	if (shouldFlush)
+	{
+		Try(
+			Flush(),
+			"Failed to flush memory buffer"
+		);
+	}
 }
 
 VkResult MemoryBuffer::Map(VkDeviceSize size, const VkDeviceSize offset, const GraphicsDevice* device)

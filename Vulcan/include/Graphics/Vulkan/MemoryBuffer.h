@@ -29,7 +29,12 @@ namespace Vulcan
 		VkDescriptorBufferInfo m_bufferInfo;
 
 	public:
-		explicit MemoryBuffer(VkDeviceSize size, VkBufferUsageFlags usage, const void* data = nullptr, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, const GraphicsDevice* device = nullptr);
+		explicit MemoryBuffer(
+			VkDeviceSize size, VkBufferUsageFlags usage, const void* data = nullptr, 
+			VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE, 
+			VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			const GraphicsDevice* device = nullptr
+		);
 		~MemoryBuffer();
 
 	public:

@@ -48,6 +48,18 @@ namespace Vulcan
 		int32 heightMap;
 	};
 
+	struct MaterialBindInfo
+	{
+		uint32 objectIndex;
+		MaterialUniform* materialUniforms;
+		MemoryBuffer* materialBuffer;
+		MemoryBuffer* transformsBuffer;
+
+		MemoryBuffer* globalsBuffer;
+		MemoryBuffer* sceneLightBuffer;
+		TList<MemoryBuffer*> lightBuffers;
+	};
+
 	class Material : public Object
 	{
 		friend class Renderer;
@@ -85,14 +97,15 @@ namespace Vulcan
 		DEFINE_DEBUG_FUNCTION(ShowGui)
 
 	private:
-		void Bind(VkCommandBuffer cmdBuffer, uint32 objectIndex, MaterialUniform* materialUniforms, MemoryBuffer* materialBuffer);
+		void FillBuffer(const MaterialBindInfo& bindInfo);
+		void Bind(VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo);
 		void UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const;
 		void UpdateUniformDescriptor(const MemoryBuffer* buffer, uint32 binding) const;
 
 		void ValidatePipeline();
 
 		void InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Texture* texture, uint32 binding) const;
-		void InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, uint32 binding, uint32 arrayElem = 0) const;
+		void InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, uint32 binding, VkDescriptorType type, uint32 arrayElem = 0) const;
 
 		void AddTextureMaps();
 

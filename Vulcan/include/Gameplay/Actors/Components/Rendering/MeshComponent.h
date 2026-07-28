@@ -19,6 +19,7 @@ namespace Vulcan
 	public:
 		Material* GetMaterial() const;
 
+		void PreRender() override;
 		void Render() override;
 
 	};

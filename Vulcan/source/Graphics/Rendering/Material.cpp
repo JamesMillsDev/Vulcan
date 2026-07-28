@@ -83,15 +83,10 @@ void Material::Dbg_ShowGui()
 }
 #endif
 
-void Material::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex, MaterialUniform* materialUniforms,
-	MemoryBuffer* materialBuffer)
+void Material::FillBuffer(const MaterialBindInfo& bindInfo)
 {
-	ValidatePipeline();
-
-	Vulkan* vulkan = Vulkan::Instance();
-
 	// Update the material uniform with this material's data
-	materialUniforms[objectIndex] =
+	bindInfo.materialUniforms[bindInfo.objectIndex] =
 	{
 		.color = color,
 		.emissiveTint = emissiveTint,
@@ -106,37 +101,29 @@ void Material::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex, M
 		.emissiveMap = m_textures[EMISSIVE_MAP_NAME] != nullptr ? m_textures[EMISSIVE_MAP_NAME]->GetId() : -1,
 		.heightMap = m_textures[HEIGHT_MAP_NAME] != nullptr ? m_textures[HEIGHT_MAP_NAME]->GetId() : -1,
 	};
+}
 
-	materialBuffer->Fill(materialUniforms);
-	m_pipeline->Bind(cmdBuffer, objectIndex);
+void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo)
+{
+	ValidatePipeline();
+
+	m_pipeline->Bind(cmdBuffer, bindInfo.objectIndex);
 
 	// Update the descriptor sets if needed
 	if (m_shouldUpdateDescriptors)
 	{
 		TList<VkWriteDescriptorSet> writes;
 
-		InsertUniformWrite(
-			writes, vulkan->GetUniformBuffer(EUniformBufferIds::Globals),
-			static_cast<uint32>(EUniformBufferIds::Globals)
-		);
-
-		InsertUniformWrite(
-			writes, vulkan->GetUniformBuffer(EUniformBufferIds::Transforms),
-			static_cast<uint32>(EUniformBufferIds::Transforms)
-		);
-
-		InsertUniformWrite(
-			writes, vulkan->GetUniformBuffer(EUniformBufferIds::SceneLighting),
-			static_cast<uint32>(EUniformBufferIds::SceneLighting)
-		);
+		InsertUniformWrite(writes, bindInfo.globalsBuffer, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		InsertUniformWrite(writes, bindInfo.sceneLightBuffer, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
 		for (uint8 i = 0; i < MAX_LIGHT_COUNT; ++i)
 		{
-			if (const MemoryBuffer* buffer = vulkan->GetUniformBuffer(EUniformBufferIds::Lights, i))
-			{
-				InsertUniformWrite(writes, buffer, static_cast<uint32>(EUniformBufferIds::Lights), i);
-			}
+			InsertUniformWrite(writes, bindInfo.lightBuffers[i], 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, i);
 		}
+
+		InsertUniformWrite(writes, bindInfo.transformsBuffer, 3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+		InsertUniformWrite(writes, bindInfo.materialBuffer, 4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
 
 		UpdateDescriptorSets(writes);
 		m_shouldUpdateDescriptors = false;
@@ -149,7 +136,7 @@ void Material::UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const
 	{
 		if (texture->Value() != nullptr)
 		{
-			InsertTextureWrite(writes, texture->Value(), static_cast<uint32>(EUniformBufferIds::Textures));
+			InsertTextureWrite(writes, texture->Value(), 5);
 		}
 	}
 
@@ -193,7 +180,7 @@ void Material::InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Tex
 				.pNext = nullptr,
 				.dstSet = m_pipeline->GetDescriptorSet(),
 				.dstBinding = binding,
-				.dstArrayElement = 0,
+				.dstArrayElement = static_cast<uint32>(texture->GetId()),
 				.descriptorCount = 1,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 				.pImageInfo = &texture->GetDescriptors(),
@@ -204,7 +191,8 @@ void Material::InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Tex
 	}
 }
 
-void Material::InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, const uint32 binding, const uint32 arrayElem) const
+void Material::InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, const uint32 binding,
+	const VkDescriptorType type, const uint32 arrayElem) const
 {
 	writes.Add(
 		{
@@ -214,7 +202,7 @@ void Material::InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const Mem
 			.dstBinding = binding,
 			.dstArrayElement = arrayElem,
 			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorType = type,
 			.pImageInfo = nullptr,
 			.pBufferInfo = &buffer->GetBufferInfo(),
 			.pTexelBufferView = nullptr

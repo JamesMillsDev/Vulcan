@@ -1,73 +1,25 @@
 #pragma once
 
 #include <functional>
-#include <stdexcept>
-#include <string>
 #include <vk_mem_alloc.h>
-#include <vulkan/vulkan.h>
+
+#include "Graphics/Vulkan/Common.h"
 
 #include "Maths/Color.h"
-#include "Utility/Collections/ResourceStack.h"
-#include "Utility/Collections/TArray.h"
-#include "Utility/Collections/TList.h"
-#include "Utility/Collections/TMap.h"
 
 struct GLFWwindow;
 
-using std::runtime_error;
-using std::string;
 using InitFunction = std::function<void()>;
+using CleanupFunction = std::function<void()>;
 
 namespace Vulcan
 {
-	class GraphicsDevice;
 	class Config;
-	class Renderer;
-	class SwapChain;
-	class Texture;
-	class Version;
-	class MemoryBuffer;
-	class GraphicsPipeline;
-
-	constexpr int32 MAX_FRAMES_IN_FLIGHT = 2;
-	constexpr uint32 MAX_VISIBLE_OBJECTS = 1000;
-
-#ifdef _DEBUG
-	constexpr bool ENABLE_VALIDATION_LAYERS = true;
-#else
-	constexpr bool ENABLE_VALIDATION_LAYERS = false;
-#endif
-
-	const TList VALIDATION_LAYERS =
-	{
-		"VK_LAYER_KHRONOS_validation"
-	};
-
-	struct UniformBufferData
-	{
-		uint32 count;
-		VkDeviceSize size;
-		VkBufferUsageFlags bufferUsage;
-		uint16 id;
-	};
-
-	enum class EUniformBufferIds : uint16
-	{
-		Globals = 0,
-		SceneLighting = 1,
-		Lights = 2,
-		Transforms = 3,
-		Materials = 4,
-		Textures = 5,
-		Max = UINT16_MAX
-	};
-
-	using UniformBufferSet = TMap<uint16, TList<MemoryBuffer*>>;
+	class ResourceStack;
 
 	class Vulkan  // NOLINT(cppcoreguidelines-special-member-functions)
 	{
-		friend Renderer;
-		friend void CheckSwapChain(VkResult result, const string& errorMsg);
+		friend class Renderer;
 
 	private:
 		static Vulkan* m_instance;
@@ -79,39 +31,31 @@ namespace Vulcan
 		[[nodiscard]] static runtime_error VulkanError(const string& message, VkResult result);
 
 		[[nodiscard]] static const GraphicsDevice* Device();
+		[[nodiscard]] static const CommandManager* CmdManager();
 		[[nodiscard]] static const VmaAllocator& Allocator();
 
 	private:
 		static void Create(Config* config, GLFWwindow* window);
 		static void Destroy();
 
-		static bool CheckValidationLayerSupport();
-		static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
 	public:
 		bool recreateSwapChain;
 
 	private:
-		Version* m_appVersion;
-		string m_appName;
-		Version* m_engineVersion;
-		string m_engineName;
 		Color m_clearColor;
+		VmaAllocator m_vmaAllocator;
 
 		ResourceStack* m_resourceStack;
 		bool m_loaded;
 
-		VmaAllocator m_vmaAllocator;
-		VkInstance m_vkInstance;
-		VkDebugUtilsMessengerEXT m_debugMessenger;
-
+		VulkanInstance* m_vkInstance;
 		GraphicsDevice* m_device;
 		SwapChain* m_swapChain;
+		CommandManager* m_commandManager;
 
-		TArray<UniformBufferSet, MAX_FRAMES_IN_FLIGHT> m_shaderDataBuffers;
-
-		VkCommandPool m_commandPool;
-		TArray<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers;
+		TArray<VkFence, MAX_FRAMES_IN_FLIGHT> m_fences;
+		TArray<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imageAcquiredSemaphores;
+		TList<VkSemaphore> m_renderCompleteSemaphores;
 
 		uint32 m_frameIndex;
 		uint32 m_imageIndex;
@@ -123,20 +67,15 @@ namespace Vulcan
 		~Vulkan();
 
 	public:
-		void BeginOneTimeCommand(VkCommandBuffer& buffer, VkFence& fence) const;
-		void EndOneTimeCommand(const VkCommandBuffer& buffer, const VkFence& fence) const;
-
-		[[nodiscard]] MemoryBuffer* GetUniformBuffer(uint16 id, uint32 index = 0) const;
-		[[nodiscard]] MemoryBuffer* GetUniformBuffer(EUniformBufferIds id, uint32 index = 0) const;
-
 		VkFormat GetDepthFormat() const;
 
 		[[nodiscard]] const GraphicsDevice* GetDevice() const;
+		[[nodiscard]] const CommandManager* GetCmdManager() const;
 		[[nodiscard]] const VmaAllocator& GetAllocator() const;
 
 	private:
-		void Init(GLFWwindow* window);
-		void RecreateSwapChain() const;
+		void Init(Config* config, GLFWwindow* window);
+		void RecreateSwapChain();
 
 		VkCommandBuffer BeginFrame();
 		void EndFrame(VkCommandBuffer cmdBuffer);

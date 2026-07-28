@@ -5,7 +5,6 @@
 #include <vulkan/vulkan.h>
 
 #include "Vulkan.h"
-#include "Utility/Collections/TArray.h"
 #include "Utility/Collections/TList.h"
 
 using std::string;
@@ -28,10 +27,6 @@ namespace Vulcan
 		VkImageView m_depthImageView;
 		VmaAllocation m_depthImageAllocation;
 
-		TArray<VkFence, MAX_FRAMES_IN_FLIGHT> m_fences;
-		TArray<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imageAcquiredSemaphores;
-		TList<VkSemaphore> m_renderCompleteSemaphores;
-
 		GraphicsDevice* m_device;
 		VkInstance m_vkInstance;
 		VmaAllocator m_allocator;
@@ -47,20 +42,23 @@ namespace Vulcan
 		void Create(const Window* window, const VkFormat& initialDepthFormat);
 		void Recreate(const Window* window, const VkFormat& depthFormat);
 
-		VkResult AcquireNextImage(uint32* imgIndex, uint32 frameIndex) const;
+		VkResult AcquireNextImage(uint32* imgIndex, VkSemaphore imgAcquiredSemaphore) const;
 		VkImage GetImage(uint32 index) const;
 		VkImageView GetImageView(uint32 index) const;
 
-		VkFence* GetFenceForFrame(uint32 frame);
-		VkSemaphore* GetSemaphoreForFrame(uint32 frame);
-		VkSemaphore* GetRenderCompleteSemaphoreForFrame(uint32 frame);
-
-		VkSwapchainKHR* GetSwapChain();
 		VkImage GetDepthImage() const;
 		VkImageView GetDepthImageView() const;
+		uint32 GetImageCount() const;
 
 		void CreateDepthImage(const VkExtent3D& extent, const VkFormat& format);
+
 		void TransitionFrameImages(VkCommandBuffer cmdBuffer, uint32 index) const;
+		void BeginFrameRender(VkCommandBuffer cmdBuffer, uint32 imgIndex, const Color& clrColor);
+		VkResult EndFrameRender(VkCommandBuffer cmdBuffer, uint32 imgIndex);
+
+		VkResult Present(const VkSemaphore& waitSemaphore, const VkSemaphore& signalSemaphore,
+			const VkFence& fence, const VkCommandBuffer& cmdBuffer, uint32 imgIndex,
+			uint32 frameIndex) const;
 
 	};
 }

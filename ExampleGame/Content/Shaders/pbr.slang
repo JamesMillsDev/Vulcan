@@ -8,7 +8,7 @@ VSOutput main(VSInput input)
     VSOutput output;
 
     output.location = TransformVertex(input);
-    output.fragLocation = mul(transform, input.location).xyz;
+    output.fragLocation = mul(transform.value, input.location).xyz;
     
     output.normal = input.normal.xyz;
     output.tangent = input.tangent;

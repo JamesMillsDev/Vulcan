@@ -72,7 +72,50 @@ void World::Tick(Actor* actor)
 		});
 }
 
+void World::PreRender(Actor* actor)
+{
+	if (actor == nullptr)
+	{
+		actor = m_root;
+	}
+
+	if (actor != m_root)
+	{
+		for (IComponent* component : actor->m_components)
+		{
+			component->PreRender();
+		}
+	}
+
+	actor->GetTransform()->ForEachChild([this](const Transform* child, int index)
+		{
+			Render(child->Owner());
+		});
+}
+
 void World::Render(Actor* actor)
+{
+	if (actor == nullptr)
+	{
+		actor = m_root;
+	}
+
+	if (actor != m_root)
+	{
+		actor->Render();
+		for (IComponent* component : actor->m_components)
+		{
+			component->Render();
+		}
+	}
+
+	actor->GetTransform()->ForEachChild([this](const Transform* child, int index)
+		{
+			Render(child->Owner());
+		});
+}
+
+void World::PostRender(Actor* actor)
 {
 	if (actor == nullptr)
 	{
@@ -83,10 +126,9 @@ void World::Render(Actor* actor)
 
 	if (actor != m_root)
 	{
-		actor->Render();
 		for (IComponent* component : actor->m_components)
 		{
-			component->Render();
+			component->PostRender();
 		}
 	}
 

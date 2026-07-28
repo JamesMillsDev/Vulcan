@@ -9,9 +9,10 @@
 
 namespace Vulcan
 {
+	class MemoryBuffer;
 	class LightComponent;
 
-	constexpr uint8 MAX_LIGHT_COUNT = 16;
+	constexpr uint8 MAX_LIGHT_COUNT = 10;
 
 	struct LightUniform
 	{
@@ -38,19 +39,25 @@ namespace Vulcan
 
 	class Lighting
 	{
+		friend class Renderer;
+
 	private:
 		SceneLightingUniform m_sceneLighting;
 		TList<LightComponent*> m_lights;
 
+		MemoryBuffer* m_sceneLightingBuffer;
+		TList<MemoryBuffer*> m_lightBuffers;
+
 	public:
 		Lighting();
+		~Lighting();
 
 	public:
 		void UpdateBuffers();
 
 		DEFINE_DEBUG_FUNCTION(ShowGui)
 
-			void AddLight(LightComponent* light);
+		void AddLight(LightComponent* light);
 		void RemoveLight(LightComponent* light);
 
 	};

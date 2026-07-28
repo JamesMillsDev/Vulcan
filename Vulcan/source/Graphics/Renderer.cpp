@@ -6,6 +6,7 @@
 #include "Gameplay/GameInstance.h"
 #include "Gameplay/Actors/World.h"
 #include "Graphics/Rendering/Camera.h"
+#include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
@@ -100,6 +101,8 @@ Renderer::Renderer(Config* config, GLFWwindow* window)
 
 	m_vulkan = Vulkan::Instance();
 
+	m_globalUniformBuffer = new MemoryBuffer{ sizeof(GlobalsUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
+
 	uint64 dynamicAlignment = m_vulkan->GetDevice()->DynamicAlignment<mat4>();
 	uint64 bufferSize = MAX_VISIBLE_OBJECTS * dynamicAlignment;
 	m_transforms = static_cast<mat4*>(alignedAlloc(bufferSize, dynamicAlignment));
@@ -119,12 +122,35 @@ Renderer::~Renderer()
 	delete m_transformBuffer;
 	delete m_materialBuffer;
 
+	delete m_globalUniformBuffer;
+
 	DestroyVulkan();
 }
 
-void Renderer::Render(const Mesh* mesh, Material* material, const uint32 objectIndex) const
+void Renderer::UpdateBuffer(Material* material, const uint32 objectIndex) const
 {
-	material->Bind(m_frameCmdBuf, objectIndex, m_materials, m_materialBuffer);
+	MaterialBindInfo bindInfo = {};
+
+	bindInfo.objectIndex = objectIndex;
+	bindInfo.materialUniforms = m_materials;
+
+	material->FillBuffer(bindInfo);
+}
+
+void Renderer::Render(const Mesh* mesh, Material* material, const uint32 objectIndex, const Lighting* lighting) const
+{
+	const MaterialBindInfo bindInfo =
+	{
+		.objectIndex = objectIndex,
+		.materialUniforms = m_materials,
+		.materialBuffer = m_materialBuffer,
+		.transformsBuffer = m_transformBuffer,
+		.globalsBuffer = m_globalUniformBuffer,
+		.sceneLightBuffer = lighting->m_sceneLightingBuffer,
+		.lightBuffers = lighting->m_lightBuffers
+	};
+
+	material->Bind(m_frameCmdBuf, bindInfo);
 	mesh->Render(m_frameCmdBuf);
 }
 
@@ -136,7 +162,16 @@ void Renderer::BeginFrame()
 	}
 
 	m_frameCmdBuf = m_vulkan->BeginFrame();
+}
 
+void Renderer::EndFrame()
+{
+	m_vulkan->EndFrame(m_frameCmdBuf);
+	m_frameCmdBuf = VK_NULL_HANDLE;
+}
+
+void Renderer::UpdateBuffers()
+{
 	m_currentCamera->GetPvm(m_globalsUniform);
 
 	m_globalsUniform.exposure = 4.5f;
@@ -144,12 +179,11 @@ void Renderer::BeginFrame()
 	m_globalsUniform.prefilteredCubeMipLevels = 1.f;
 	m_globalsUniform.scaleIBLAmbient = 1.f;
 
-	MemoryBuffer* globalsBuff = m_vulkan->GetUniformBuffer(EUniformBufferIds::Globals);
-	globalsBuff->Fill(&m_globalsUniform);
+	m_globalUniformBuffer->Fill(&m_globalsUniform);
 
 	// Get all transforms that have changed since the last frame
 	const GameInstance* game = Application::GetGameInstance();
-	if (const TList<DirtyTransform> dirty = game->GetWorld()->GetRootActor()->CollectDirtyTransforms(); 
+	if (const TList<DirtyTransform> dirty = game->GetWorld()->GetRootActor()->CollectDirtyTransforms();
 		!dirty.IsEmpty())
 	{
 		// Update the buffer for the transforms
@@ -158,12 +192,8 @@ void Renderer::BeginFrame()
 			m_transforms[index] = value;
 		}
 
-		m_transformBuffer->Fill(m_transforms, true);
+		m_transformBuffer->Fill(m_transforms, 0, 0, true);
 	}
-}
 
-void Renderer::EndFrame()
-{
-	m_vulkan->EndFrame(m_frameCmdBuf);
-	m_frameCmdBuf = VK_NULL_HANDLE;
+	m_materialBuffer->Fill(m_materials);
 }

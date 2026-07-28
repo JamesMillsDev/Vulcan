@@ -17,6 +17,7 @@ using glm::mat4;
 
 namespace Vulcan
 {
+	class Lighting;
 	struct MaterialUniform;
 	class MemoryBuffer;
 	class Application;
@@ -56,9 +57,12 @@ namespace Vulcan
 		Vulkan* m_vulkan;
 
 		GlobalsUniform m_globalsUniform;
+		MemoryBuffer* m_globalUniformBuffer;
+
 		mat4* m_transforms;
-		MaterialUniform* m_materials;
 		MemoryBuffer* m_transformBuffer;
+
+		MaterialUniform* m_materials;
 		MemoryBuffer* m_materialBuffer;
 
 	private:
@@ -66,11 +70,14 @@ namespace Vulcan
 		~Renderer();
 
 	public:
-		void Render(const Mesh* mesh, Material* material, uint32 objectIndex) const;
+		void UpdateBuffer(Material* material, uint32 objectIndex) const;
+		void Render(const Mesh* mesh, Material* material, uint32 objectIndex, const Lighting* lighting) const;
 
 	private:
 		void BeginFrame();
 		void EndFrame();
+
+		void UpdateBuffers();
 
 	};
 }

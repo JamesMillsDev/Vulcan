@@ -22,7 +22,7 @@ void ExampleGameInstance::Init()
 	m_camera = new FlyCamera{ 45.f, .1f, 100.f };
 	m_camera->location = vec3{ 0.f, 2.f, -10.f };
 
-	/*m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
+	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
 	m_material = new Material{ "Shaders/pbr" };
 	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_BC"));
 	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N"));
@@ -30,14 +30,14 @@ void ExampleGameInstance::Init()
 
 	m_meshActor = GetWorld()->MakeActor<Actor>();
 	m_meshActor->MakeComponent<MeshComponent>(m_mesh, m_material);
-	m_material->color = Color{ 1.f, .5f, .31f, 1.f };*/
+	m_material->color = Color{ 1.f, .5f, .31f, 1.f };
 }
 
 void ExampleGameInstance::Shutdown()
 {
 	delete m_camera;
-	//delete m_mesh;
-	//delete m_material;
+	delete m_mesh;
+	delete m_material;
 }
 
 void ExampleGameInstance::Tick()

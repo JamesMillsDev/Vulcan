@@ -22,7 +22,7 @@ GraphicsPipelineConfig::GraphicsPipelineConfig(ShaderConfig shader)
 }
 
 GraphicsPipelineConfig::GraphicsPipelineConfig(const string& shaderName)
-	: GraphicsPipelineConfig{ ShaderConfig{ .name = shaderName } }
+	: GraphicsPipelineConfig{ ShaderConfig{.name = shaderName } }
 {
 
 }
@@ -54,10 +54,10 @@ void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, const uint32 object
 	{
 		objectIndex * static_cast<uint32>(Vulkan::Device()->DynamicAlignment<mat4>()),
 		objectIndex * static_cast<uint32>(Vulkan::Device()->DynamicAlignment<MaterialUniform>()),
-	};
+	}; 
 
 	vkCmdBindDescriptorSets(
-		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, 
+		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets,
 		dynamicOffsets.Count(), dynamicOffsets.Data()
 	);
 
@@ -111,7 +111,7 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		VkDescriptorSetLayoutBinding
 		{
 			.binding = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 			.descriptorCount = 1,
 			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
 			.pImmutableSamplers = nullptr
@@ -119,15 +119,15 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		VkDescriptorSetLayoutBinding
 		{
 			.binding = 2,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = MAX_LIGHT_COUNT,
 			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
 			.pImmutableSamplers = nullptr
 		},
-		VkDescriptorSetLayoutBinding 
+		VkDescriptorSetLayoutBinding
 		{
 			.binding = 3,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
 			.descriptorCount = 1,
 			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
 			.pImmutableSamplers = nullptr
@@ -135,8 +135,8 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		VkDescriptorSetLayoutBinding
 		{
 			.binding = 4,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.descriptorCount = MAX_LIGHT_COUNT,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1,
 			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
 			.pImmutableSamplers = nullptr
 		},
@@ -283,7 +283,7 @@ void GraphicsPipeline::InitPipeline(const VkDevice& device)
 	TList<VkPipelineShaderStageCreateInfo> ssCreateInfos;
 	for (int32 i = VK_SHADER_STAGE_VERTEX_BIT; i < VK_SHADER_STAGE_ALL_GRAPHICS; i <<= 1)
 	{
-		if (!m_config.ContainsStage(static_cast<VkShaderStageFlagBits>(i))) 
+		if (!m_config.ContainsStage(static_cast<VkShaderStageFlagBits>(i)))
 		{
 			continue;
 		}
@@ -319,7 +319,7 @@ void GraphicsPipeline::InitPipeline(const VkDevice& device)
 	viewportState.viewportCount = 1;
 	viewportState.scissorCount = 1;
 
-	const auto& [frontFace, cullMode, polygonMode, depthBiasEnabled, 
+	const auto& [frontFace, cullMode, polygonMode, depthBiasEnabled,
 		depthClampEnabled, rasterizerDiscardEnabled, lineWidth] = m_config.rasterizer;
 	VkPipelineRasterizationStateCreateInfo rasterizerInfo{};
 	rasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;

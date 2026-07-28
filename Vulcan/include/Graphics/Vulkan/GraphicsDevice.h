@@ -1,8 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-
-#include "Maths/Alias.h"
+#include "Graphics/Vulkan/Common.h"
 
 namespace Vulcan
 {

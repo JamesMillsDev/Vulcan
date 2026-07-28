@@ -47,7 +47,9 @@ namespace Vulcan
 
 	private:
 		void Tick(Actor* actor = nullptr);
+		void PreRender(Actor* actor = nullptr);
 		void Render(Actor* actor = nullptr);
+		void PostRender(Actor* actor = nullptr);
 
 	};
 

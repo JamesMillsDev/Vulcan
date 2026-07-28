@@ -23,9 +23,9 @@ struct SceneLightingUniform
     float ambientStrength;
 };
 
-const static int MAX_LIGHT_COUNT = 16;
-[[vk::binding(3, 0)]] ConstantBuffer<SceneLightingUniform> sceneLighting;
-[[vk::binding(4, 0)]] ConstantBuffer<LightUniform> lights[MAX_LIGHT_COUNT];
+const static int MAX_LIGHT_COUNT = 10;
+[[vk::binding(1, 0)]] ConstantBuffer<SceneLightingUniform> sceneLighting;
+[[vk::binding(2, 0)]] ConstantBuffer<LightUniform> lights[MAX_LIGHT_COUNT];
 
 float3 LightDirection(int32_t index, float3 location)
 {

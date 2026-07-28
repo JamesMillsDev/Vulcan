@@ -1,124 +1,34 @@
 #include "Graphics/Vulkan/Vulkan.h"
 
 #include <format>
+
 #include <GLFW/glfw3.h>
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_impl_glfw.h>
+#include <ImGui/imgui_impl_vulkan.h>
+
 #include "Application.h"
 #include "Window.h"
+
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
-#include "Graphics/Uniforms.h"
-#include "Graphics/Rendering/Lighting.h"
-#include "Graphics/Rendering/Material.h"
+
 #include "Graphics/Rendering/Texture.h"
+#include "Graphics/Vulkan/CommandManager.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
-#include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Swapchain.h"
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_impl_glfw.h"
-#include "ImGui/imgui_impl_vulkan.h"
+#include "Graphics/Vulkan/VulkanInstance.h"
+
 #include "Utility/Config.h"
 #include "Utility/Console.h"
-#include "Utility/Version.h"
+#include "Utility/Collections/ResourceStack.h"
 
 using std::exception;
 
 using namespace Vulcan;
-
-constexpr int32 UNIFORM_BUFFER_COUNT = 3;
-
-const TArray UNIFORM_DATA 
-{
-	UniformBufferData
-	{
-		.count = 1,
-		.size = sizeof(GlobalsUniform),
-		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		.id = static_cast<uint16>(EUniformBufferIds::Globals)
-	},
-	UniformBufferData
-	{
-		.count = 1,
-		.size = sizeof(SceneLightingUniform),
-		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		.id = static_cast<uint16>(EUniformBufferIds::SceneLighting)
-	},
-	UniformBufferData 
-	{
-		.count = MAX_LIGHT_COUNT,
-		.size = sizeof(LightUniform),
-		.bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-		.id = static_cast<uint16>(EUniformBufferIds::Lights)
-	}
-};
-
-namespace
-{
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageLevel = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-
-	VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-		const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData)
-	{
-		if (messageSeverity >= messageLevel)
-		{
-			switch (messageSeverity)  // NOLINT(clang-diagnostic-switch-enum)
-			{
-				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-				{
-					Console::Debug(pCallbackData->pMessage);
-					break;
-				}
-				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-				{
-					Console::Info(pCallbackData->pMessage);
-					break;
-				}
-				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-				{
-					Console::Warning(pCallbackData->pMessage);
-					break;
-				}
-				case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-				{
-					Console::Error(pCallbackData->pMessage);
-					break;
-				}
-				default: break;
-			}
-		}
-
-		return VK_FALSE;
-	}
-
-	VkResult CreateDebugUtilsMessengerEXT(const VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
-	{
-		PFN_vkCreateDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(  // NOLINT(clang-diagnostic-cast-function-type-strict)
-			vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT")
-			);
-		if (func != nullptr)
-		{
-			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-		}
-
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-
-	void DestroyDebugUtilsMessengerEXT(const VkInstance instance, const VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
-	{
-		PFN_vkDestroyDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(  // NOLINT(clang-diagnostic-cast-function-type-strict)
-			vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")
-			);
-		if (func != nullptr)
-		{
-			func(instance, debugMessenger, pAllocator);
-		}
-	}
-}
 
 void CheckSwapChain(const VkResult result, const string& errorMsg) // NOLINT(misc-use-anonymous-namespace, clang-diagnostic-microsoft-redeclare-static)
 {
@@ -161,6 +71,16 @@ const VmaAllocator& Vulkan::GetAllocator() const
 	return m_vmaAllocator;
 }
 
+const CommandManager* Vulkan::CmdManager()
+{
+	return m_instance->GetCmdManager();
+}
+
+const CommandManager* Vulkan::GetCmdManager() const
+{
+	return m_commandManager;
+}
+
 bool Vulkan::IsLoaded()
 {
 	return m_instance != nullptr && m_instance->m_loaded;
@@ -182,152 +102,19 @@ void Vulkan::Destroy()
 	m_instance = nullptr;
 }
 
-bool Vulkan::CheckValidationLayerSupport()
-{
-	// Count the number of available layers
-	uint32 layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	// Get the layers from the driver, storing them in a vector
-	vector<VkLayerProperties> availableLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-	// Iterate over the layers we want to use
-	for (const char* layerName : VALIDATION_LAYERS)
-	{
-		bool layerFound = false;
-
-		// Iterate over the layers that the driver supports
-		for (const VkLayerProperties& layerProperties : availableLayers)
-		{
-			// Validate the names match for this property, if they do, mark it as found and break
-			if (strcmp(layerName, layerProperties.layerName) == 0)
-			{
-				layerFound = true;
-				break;
-			}
-		}
-
-		// If the layer still hasn't been found, we are trying to enable a layer that is
-		// unsupported
-		if (!layerFound)
-		{
-			return false;
-		}
-	}
-
-	// All requested layers are supported
-	return true;
-}
-
-void Vulkan::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-{
-	createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	createInfo.pfnUserCallback = DebugCallback;
-}
-
 Vulkan::Vulkan(Config* config, GLFWwindow* window)
 	: recreateSwapChain{ false }, m_resourceStack{ new ResourceStack }, m_loaded{ false },
 	m_frameIndex{ 0 }, m_imageIndex{ 0 }
 {
-	m_appName = config->Get<string>("Application.Title");
-	m_appVersion = new Version{ "Application.Version", config };
-	m_engineName = config->Get<string>("Engine.Title");
-	m_engineVersion = new Version{ "Engine.Version", config };
 	m_clearColor = config->Get<Color>("Window.ClrColor");
 	m_clearColor.ToGamma();
 
-	Init(window);
+	Init(config, window);
 }
 
 Vulkan::~Vulkan()
 {
 	delete m_resourceStack;
-	delete m_appVersion;
-	delete m_engineVersion;
-}
-
-void Vulkan::BeginOneTimeCommand(VkCommandBuffer& buffer, VkFence& fence) const
-{
-	VkResult result;
-
-	// Attempt to create the one-time fence
-	VkFenceCreateInfo fenceCreateInfo{};
-	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	if (result = vkCreateFence(m_device->Logical(), &fenceCreateInfo, nullptr, &fence);
-		result != VK_SUCCESS)
-	{
-		throw VulkanError("Failed to create One-Time Fence!", result);
-	}
-
-	// Attempt to allocate one-time command buffer
-	VkCommandBufferAllocateInfo cbAllocateInfo{};
-	cbAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cbAllocateInfo.commandPool = m_commandPool;
-	cbAllocateInfo.commandBufferCount = 1;
-
-	if (result = vkAllocateCommandBuffers(m_device->Logical(), &cbAllocateInfo, &buffer);
-		result != VK_SUCCESS)
-	{
-		throw VulkanError("Failed to create One-Time Command Buffer!", result);
-	}
-
-	// Attempt to begin the command buffer
-	VkCommandBufferBeginInfo cbBeginInfo{};
-	cbBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cbBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	if (result = vkBeginCommandBuffer(buffer, &cbBeginInfo);
-		result != VK_SUCCESS)
-	{
-		throw VulkanError("Failed to begin One-Time Command Buffer!", result);
-	}
-}
-
-void Vulkan::EndOneTimeCommand(const VkCommandBuffer& buffer, const VkFence& fence) const
-{
-	VkResult result;
-
-	// Attempt to end the command buffer
-	if (result = vkEndCommandBuffer(buffer); result != VK_SUCCESS)
-	{
-		throw VulkanError("Failed to end One-Time Command Buffer!", result);
-	}
-
-	// Attempt to submit the queue
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &buffer;
-
-	if (result = vkQueueSubmit(m_device->Queue(), 1, &submitInfo, fence); result != VK_SUCCESS)
-	{
-		throw VulkanError("Failed to submit One-Time Command!", result);
-	}
-
-	// Wait for the fences to finish
-	if (result = vkWaitForFences(m_device->Logical(), 1, &fence, VK_TRUE, UINT64_MAX); result != VK_SUCCESS)
-	{
-		throw VulkanError("Fence timed out!", result);
-	}
-
-	vkDestroyFence(m_device->Logical(), fence, nullptr);
-}
-
-MemoryBuffer* Vulkan::GetUniformBuffer(const uint16 id, const uint32 index) const
-{
-	return m_shaderDataBuffers[m_frameIndex][id][index];
-}
-
-MemoryBuffer* Vulkan::GetUniformBuffer(EUniformBufferIds id, const uint32 index) const
-{
-	return GetUniformBuffer(static_cast<uint16>(id), index);
 }
 
 VkFormat Vulkan::GetDepthFormat() const
@@ -353,95 +140,27 @@ VkFormat Vulkan::GetDepthFormat() const
 	return depthFormat;
 }
 
-void Vulkan::Init(GLFWwindow* window)
+void Vulkan::Init(Config* config, GLFWwindow* window)
 {
 	try
 	{
 		// VK Instance
 		InitAndPushResource(
-			[this]
+			[this, config]
 			{
-				const VkApplicationInfo appInfo
-				{
-					.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-					.pNext = nullptr,
-					.pApplicationName = m_appName.c_str(),
-					.applicationVersion = VK_MAKE_VERSION(m_appVersion->major, m_appVersion->minor, m_appVersion->patch),
-					.pEngineName = m_engineName.c_str(),
-					.engineVersion = VK_MAKE_VERSION(m_engineVersion->major, m_engineVersion->minor, m_engineVersion->patch),
-					.apiVersion = VK_API_VERSION_1_3
-				};
-
-				uint32 instanceExtensionsCount = 0;
-				const char** instanceExtensions = glfwGetRequiredInstanceExtensions(&instanceExtensionsCount);
-
-				vector<const char*> extensions;
-				for (uint32 i = 0; i < instanceExtensionsCount; ++i)
-				{
-					extensions.emplace_back(instanceExtensions[i]);
-				}
-
-				if constexpr (ENABLE_VALIDATION_LAYERS)
-				{
-					// Add in the extra required extensions
-					extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-				}
-
-				VkInstanceCreateInfo instanceInfo{};
-				instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-				instanceInfo.pApplicationInfo = &appInfo;
-				instanceInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
-				instanceInfo.ppEnabledExtensionNames = extensions.data();
-
-				if constexpr (ENABLE_VALIDATION_LAYERS)
-				{
-					// Add the layers into the creation info if we requested it (Debug only)
-					instanceInfo.enabledLayerCount = static_cast<uint32>(VALIDATION_LAYERS.size());
-					instanceInfo.ppEnabledLayerNames = VALIDATION_LAYERS.Data();
-
-					// Set the next create info to be the debug messenger
-					VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-					PopulateDebugMessengerCreateInfo(debugCreateInfo);
-					instanceInfo.pNext = &debugCreateInfo;
-				}
-
-				Try(
-					vkCreateInstance(&instanceInfo, nullptr, &m_vkInstance),
-					"Failed to create Vulkan Instance!"
-				);
+				m_vkInstance = new VulkanInstance{ config };
 			},
 			[this]
 			{
-				vkDestroyInstance(m_vkInstance, nullptr);
+				delete m_vkInstance;
 			}
 		);
-
-		// Debug Messenger
-		if constexpr (ENABLE_VALIDATION_LAYERS)
-		{
-			InitAndPushResource(
-				[this]
-				{
-					VkDebugUtilsMessengerCreateInfoEXT createInfo;
-					PopulateDebugMessengerCreateInfo(createInfo);
-
-					Try(
-						CreateDebugUtilsMessengerEXT(m_vkInstance, &createInfo, nullptr, &m_debugMessenger),
-						"Failed to create Debug Messenger!"
-					);
-				},
-				[this]
-				{
-					DestroyDebugUtilsMessengerEXT(m_vkInstance, m_debugMessenger, nullptr);
-				}
-			);
-		}
 
 		// Logical / Physical Device
 		InitAndPushResource(
 			[this]
 			{
-				m_device = new GraphicsDevice{ m_vkInstance };
+				m_device = new GraphicsDevice{ m_vkInstance->Get() };
 			},
 			[this]
 			{
@@ -463,7 +182,7 @@ void Vulkan::Init(GLFWwindow* window)
 				allocatorCI.physicalDevice = m_device->Physical();
 				allocatorCI.device = m_device->Logical();
 				allocatorCI.pVulkanFunctions = &vkFunctions;
-				allocatorCI.instance = m_vkInstance;
+				allocatorCI.instance = m_vkInstance->Get();
 
 				Try(
 					vmaCreateAllocator(&allocatorCI, &m_vmaAllocator),
@@ -481,7 +200,7 @@ void Vulkan::Init(GLFWwindow* window)
 			[this]
 			{
 				const Window* win = Application::GetWindow();
-				m_swapChain = new SwapChain{ win, m_device, m_vkInstance, m_vmaAllocator, GetDepthFormat() };
+				m_swapChain = new SwapChain{ win, m_device, m_vkInstance->Get(), m_vmaAllocator, GetDepthFormat() };
 			},
 			[this]
 			{
@@ -489,54 +208,55 @@ void Vulkan::Init(GLFWwindow* window)
 			}
 		);
 
-		// Shader uniform buffers
+		// Fences and semaphores
 		InitAndPushResource(
 			[this]
 			{
-				// We need a set of buffers for every frame in flight
+				VkSemaphoreCreateInfo semaphoreCreateInfo{};
+				semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+				// Make sure the fence will be signaled for the first frame
+				VkFenceCreateInfo fenceCreateInfo{};
+				fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+				fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+				// Create a fence and an image semaphore for each frame in flight
 				for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 				{
-					TMap<uint16, TList<MemoryBuffer*>> buffers;
+					Try(
+						vkCreateFence(m_device->Logical(), &fenceCreateInfo, nullptr, &m_fences[i]),
+						std::format("Failed to create Fence for frame: {}!", i)
+					);
 
-					for (const UniformBufferData& uniformData : UNIFORM_DATA)
-					{
-						TList<MemoryBuffer*> buffer;
+					Try(
+						vkCreateSemaphore(m_device->Logical(), &semaphoreCreateInfo, nullptr, &m_imageAcquiredSemaphores[i]),
+						std::format("Failed to create Image Acquired Semaphore for frame: {}!", i)
+					);
+				}
 
-						for (uint32 j = 0; j < uniformData.count; ++j)
-						{
-
-
-							buffer.Add(new MemoryBuffer
-								{
-									uniformData.size,
-									uniformData.bufferUsage,
-									nullptr,
-									VK_SHARING_MODE_EXCLUSIVE,
-									VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-									m_device
-								});
-						}
-
-						buffers.Add(uniformData.id, buffer);
-					}
-
-					m_shaderDataBuffers[i] = buffers;
+				// Match the size of the render complete semaphores to the swap chain images
+				m_renderCompleteSemaphores.Resize(m_swapChain->m_swapChainImages.Count());
+				for (VkSemaphore& semaphore : m_renderCompleteSemaphores)
+				{
+					Try(
+						vkCreateSemaphore(m_device->Logical(), &semaphoreCreateInfo, nullptr, &semaphore),
+						"Failed to create Render Complete Semaphore!"
+					);
 				}
 			},
 			[this]
 			{
+				for (const VkSemaphore& semaphore : m_renderCompleteSemaphores)
+				{
+					vkDestroySemaphore(m_device->Logical(), semaphore, nullptr);
+				}
+
+				m_renderCompleteSemaphores.Clear();
+
 				for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 				{
-					// Delete each buffer for this frame in flight
-					for (TMapEntry<unsigned short, TList<MemoryBuffer*>>* buffers : m_shaderDataBuffers[i])
-					{
-						for (const MemoryBuffer* buffer : buffers->Value())
-						{
-							delete buffer;
-						}
-					}
-
-					m_shaderDataBuffers[i].Clear();
+					vkDestroySemaphore(m_device->Logical(), m_imageAcquiredSemaphores[i], nullptr);
+					vkDestroyFence(m_device->Logical(), m_fences[i], nullptr);
 				}
 			}
 		);
@@ -546,30 +266,11 @@ void Vulkan::Init(GLFWwindow* window)
 			[this]
 			{
 				// Attempt to create the command pool
-				VkCommandPoolCreateInfo cpCreateInfo{};
-				cpCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-				cpCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-				cpCreateInfo.queueFamilyIndex = m_device->QueueFamily();
-
-				Try(
-					vkCreateCommandPool(m_device->Logical(), &cpCreateInfo, nullptr, &m_commandPool),
-					"Failed to create Command Pool!"
-				);
-
-				// Attempt to create command buffers for each frame in flight
-				VkCommandBufferAllocateInfo cbAllocateInfo{};
-				cbAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-				cbAllocateInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
-				cbAllocateInfo.commandPool = m_commandPool;
-
-				Try(
-					vkAllocateCommandBuffers(m_device->Logical(), &cbAllocateInfo, m_commandBuffers.Data()),
-					"Failed to create Command Buffers!"
-				);
+				m_commandManager = new CommandManager{ m_device };
 			},
 			[this]
 			{
-				vkDestroyCommandPool(m_device->Logical(), m_commandPool, nullptr);
+				delete m_commandManager;
 			}
 		);
 
@@ -613,7 +314,7 @@ void Vulkan::Init(GLFWwindow* window)
 				ImGui_ImplGlfw_InitForVulkan(window, true);
 
 				ImGui_ImplVulkan_InitInfo initInfo{};
-				initInfo.Instance = m_vkInstance;
+				initInfo.Instance = m_vkInstance->Get();
 				initInfo.PhysicalDevice = m_device->Physical();
 				initInfo.Device = m_device->Logical();
 				initInfo.Queue = m_device->Queue();
@@ -667,12 +368,30 @@ void Vulkan::Init(GLFWwindow* window)
 	}
 }
 
-void Vulkan::RecreateSwapChain() const
+void Vulkan::RecreateSwapChain()
 {
 	vkDeviceWaitIdle(m_device->Logical());
 
 	const Window* window = Application::GetWindow();
 	m_swapChain->Recreate(window, GetDepthFormat());
+
+	// Destroy old semaphores
+	for (VkSemaphore& semaphore : m_renderCompleteSemaphores)
+	{
+		vkDestroySemaphore(m_device->Logical(), semaphore, nullptr);
+	}
+
+	// Recreate semaphores
+	VkSemaphoreCreateInfo semaphoreCreateInfo{};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	m_renderCompleteSemaphores.Resize(m_swapChain->GetImageCount());
+	for (VkSemaphore& semaphore : m_renderCompleteSemaphores)
+	{
+		Try(
+			vkCreateSemaphore(m_device->Logical(), &semaphoreCreateInfo, nullptr, &semaphore),
+			"Failed to recreate semaphore!"
+		);
+	}
 }
 
 VkCommandBuffer Vulkan::BeginFrame()
@@ -686,87 +405,26 @@ VkCommandBuffer Vulkan::BeginFrame()
 
 	// Wait on and reset fences
 	Try(
-		vkWaitForFences(m_device->Logical(), 1, m_swapChain->GetFenceForFrame(m_frameIndex), true, UINT64_MAX),
+		vkWaitForFences(m_device->Logical(), 1, &m_fences[m_frameIndex], true, VULKAN_TIMEOUT),
 		std::format("Failed to wait for fence on frame: {}!", m_frameIndex)
 	);
 	Try(
-		vkResetFences(m_device->Logical(), 1, m_swapChain->GetFenceForFrame(m_frameIndex)),
+		vkResetFences(m_device->Logical(), 1, &m_fences[m_frameIndex]),
 		std::format("Failed to reset fence on frame: {}!", m_frameIndex)
 	);
 
 	// Try to get the swap chain image index for this frame
 	CheckSwapChain(
-		m_swapChain->AcquireNextImage(&m_imageIndex, m_frameIndex),
+		m_swapChain->AcquireNextImage(&m_imageIndex, m_imageAcquiredSemaphores[m_frameIndex]),
 		std::format("Failed to acquire Swap Chain Image index for frame: {}!", m_frameIndex)
 	);
 
 	// Try to reset and retrieve the command buffer
-	const VkCommandBuffer cmdBuf = m_commandBuffers[m_frameIndex];
-	Try(
-		vkResetCommandBuffer(cmdBuf, 0),
-		std::format("Failed to reset Command Buffer for frame: {}!", m_frameIndex)
-	);
+	const VkCommandBuffer cmdBuf = m_commandManager->GetFrameCommandBuffer(m_frameIndex);
 
-	// Begin using the command buffer
-	VkCommandBufferBeginInfo cbBeginInfo{};
-	cbBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cbBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	Try(
-		vkBeginCommandBuffer(cmdBuf, &cbBeginInfo),
-		std::format("Failed to begin Command Buffer for frame: {}!", m_frameIndex)
-	);
-
-	// Transition swap chain and depth images
-	m_swapChain->TransitionFrameImages(cmdBuf, m_frameIndex);
-
-	// Begin rendering
-	VkRenderingAttachmentInfo colorAttachmentInfo{};
-	colorAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	colorAttachmentInfo.imageView = m_swapChain->GetImageView(m_imageIndex);
-	colorAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-	colorAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachmentInfo.clearValue.color.float32[0] = m_clearColor.r / 255.f;  // NOLINT(clang-diagnostic-missing-braces)
-	colorAttachmentInfo.clearValue.color.float32[1] = m_clearColor.g / 255.f;  // NOLINT(clang-diagnostic-missing-braces)
-	colorAttachmentInfo.clearValue.color.float32[2] = m_clearColor.b / 255.f;  // NOLINT(clang-diagnostic-missing-braces)
-	colorAttachmentInfo.clearValue.color.float32[3] = m_clearColor.a / 255.f;  // NOLINT(clang-diagnostic-missing-braces)
-
-	VkRenderingAttachmentInfo depthAttachmentInfo{};
-	depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachmentInfo.imageView = m_swapChain->GetDepthImageView();
-	depthAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-	depthAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachmentInfo.clearValue = { .depthStencil = { 1.f, 0 } };
-
-	const Window* window = Application::GetWindow();
-	VkRenderingInfo renderingInfo{};
-	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-	renderingInfo.renderArea = { .extent = { static_cast<uint32>(window->Width()), static_cast<uint32>(window->Height()) } };  // NOLINT(clang-diagnostic-missing-designated-field-initializers)
-	renderingInfo.layerCount = 1;
-	renderingInfo.colorAttachmentCount = 1;
-	renderingInfo.pColorAttachments = &colorAttachmentInfo;
-	renderingInfo.pDepthAttachment = &depthAttachmentInfo;
-	vkCmdBeginRendering(cmdBuf, &renderingInfo);
-
-	// Set the viewport and scissor
-	const VkViewport vp =
-	{
-		.x = 0.f,
-		.y = window->Height(),
-		.width = window->Width(),
-		.height = -window->Height(),
-		.minDepth = 0.f,
-		.maxDepth = 1.f
-	};
-	vkCmdSetViewport(cmdBuf, 0, 1, &vp);
-
-	const VkRect2D scissor =
-	{
-		.offset = { 0, 0 },
-		.extent = renderingInfo.renderArea.extent
-	};
-	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+	// Transition swap chain and depth images / begin rendering
+	m_swapChain->TransitionFrameImages(cmdBuf, m_imageIndex);
+	m_swapChain->BeginFrameRender(cmdBuf, m_imageIndex, m_clearColor);
 
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -777,73 +435,28 @@ VkCommandBuffer Vulkan::BeginFrame()
 	return cmdBuf;
 }
 
-void Vulkan::EndFrame(VkCommandBuffer cmdBuffer)
+void Vulkan::EndFrame(const VkCommandBuffer cmdBuffer)
 {
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
 
 	// End the rendering and transition the swap chain image
-	vkCmdEndRendering(cmdBuffer);
-
-	VkImageMemoryBarrier2 barrierPresent{};
-	barrierPresent.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-	barrierPresent.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-	barrierPresent.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	barrierPresent.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-	barrierPresent.dstAccessMask = 0;
-	barrierPresent.oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-	barrierPresent.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	barrierPresent.image = m_swapChain->GetImage(m_imageIndex);
-	barrierPresent.subresourceRange = { .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1, .layerCount = 1 };  // NOLINT(clang-diagnostic-missing-designated-field-initializers)
-
-	VkDependencyInfo barrierPresentDependencyInfo{};
-	barrierPresentDependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-	barrierPresentDependencyInfo.imageMemoryBarrierCount = 1;
-	barrierPresentDependencyInfo.pImageMemoryBarriers = &barrierPresent;
-	vkCmdPipelineBarrier2(cmdBuffer, &barrierPresentDependencyInfo);
-
-	// Try to end the command buffer
 	Try(
-		vkEndCommandBuffer(cmdBuffer),
+		m_swapChain->EndFrameRender(cmdBuffer, m_imageIndex),
 		std::format("Failed to end Command Buffer for frame: {}!", m_frameIndex)
 	);
 
 	// Try to submit the queue
-	VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkSubmitInfo submitInfo
-	{
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext = nullptr,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = m_swapChain->GetSemaphoreForFrame(m_frameIndex),
-		.pWaitDstStageMask = &waitStages,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &cmdBuffer,
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = m_swapChain->GetRenderCompleteSemaphoreForFrame(m_imageIndex)
-	};
-	Try(
-		vkQueueSubmit(m_device->Queue(), 1, &submitInfo, *m_swapChain->GetFenceForFrame(m_frameIndex)),
-		std::format("Failed to submit queue for frame: {}!", m_frameIndex)
+	CheckSwapChain(
+		m_swapChain->Present(
+			m_imageAcquiredSemaphores[m_frameIndex], m_renderCompleteSemaphores[m_frameIndex],
+			m_fences[m_frameIndex], cmdBuffer, m_imageIndex, m_frameIndex
+		),
+		std::format("Failed to present queue for frame: {}!", m_frameIndex)
 	);
 
 	// Try to present the queue
 	m_frameIndex = (m_frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
-	VkPresentInfoKHR presentInfo
-	{
-		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		.pNext = nullptr,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = m_swapChain->GetRenderCompleteSemaphoreForFrame(m_imageIndex),
-		.swapchainCount = 1,
-		.pSwapchains = m_swapChain->GetSwapChain(),
-		.pImageIndices = &m_imageIndex,
-		.pResults = nullptr
-	};
-	CheckSwapChain(
-		vkQueuePresentKHR(m_device->Queue(), &presentInfo),
-		std::format("Failed to present queue for frame: {}!", m_frameIndex)
-	);
 }
 
 void Vulkan::InitAndPushResource(const InitFunction& init, const CleanupFunction& cleanup) const

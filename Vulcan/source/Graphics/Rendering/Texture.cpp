@@ -5,6 +5,8 @@
 #include <stdexcept>
 
 #include "Resources.h"
+
+#include "Graphics/Vulkan/CommandManager.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
@@ -247,10 +249,10 @@ void Texture::VulkanTexture::DestroyBuffer() const
 void Texture::VulkanTexture::TransitionImage() const
 {
 	// Begin the one-time command
-	Vulkan* vulkan = Vulkan::Instance();
+	const CommandManager* cmdManager = Vulkan::CmdManager();
 	VkCommandBuffer commandBuffer;
 	VkFence fence;
-	vulkan->BeginOneTimeCommand(commandBuffer, fence);
+	cmdManager->BeginOneTimeCommand(commandBuffer, fence);
 
 	// Set up the memory barriers and dependency information
 	VkImageMemoryBarrier2 barrierTexImage{};
@@ -286,6 +288,7 @@ void Texture::VulkanTexture::TransitionImage() const
 		VkBufferImageCopy& copy = copyRegions[i];
 
 		// Assign the copy regions
+		copy = VkBufferImageCopy{};
 		copy.bufferOffset = mipOffset;
 		copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		copy.imageSubresource.mipLevel = i;
@@ -316,5 +319,5 @@ void Texture::VulkanTexture::TransitionImage() const
 	barrierTexInfo.pImageMemoryBarriers = &barrierTexRead;
 	vkCmdPipelineBarrier2(commandBuffer, &barrierTexInfo);
 
-	vulkan->EndOneTimeCommand(commandBuffer, fence);
+	cmdManager->EndOneTimeCommand(commandBuffer, fence);
 }

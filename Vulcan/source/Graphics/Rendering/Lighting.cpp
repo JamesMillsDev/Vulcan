@@ -19,61 +19,73 @@ const TArray LIGHT_NAMES =
 };
 
 Lighting::Lighting()
-	: m_sceneLighting{ .ambientColor = Color::WHITE, .ambientStrength = .2f }
+	: m_sceneLighting{ .ambientColor = Color::WHITE, .ambientStrength = .2f }, m_sceneLightingBuffer{ nullptr }
 {
+	m_lightBuffers.Resize(MAX_LIGHT_COUNT);
+}
 
+Lighting::~Lighting()
+{
+	delete m_sceneLightingBuffer;
+	for (MemoryBuffer*& lightBuffer : m_lightBuffers)
+	{
+		delete lightBuffer;
+	}
 }
 
 void Lighting::UpdateBuffers()
 {
-	const Vulkan* vulkan = Vulkan::Instance();
+	if (m_sceneLightingBuffer == nullptr)
+	{
+		m_sceneLightingBuffer = new MemoryBuffer{ sizeof(SceneLightingUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
+		for (MemoryBuffer*& lightBuffer : m_lightBuffers)
+		{
+			lightBuffer = new MemoryBuffer{ sizeof(LightUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
+		}
+	}
 
-	MemoryBuffer* sceneLightBuffer = vulkan->GetUniformBuffer(EUniformBufferIds::SceneLighting);
-	sceneLightBuffer->Fill(&m_sceneLighting);
+	m_sceneLightingBuffer->Fill(&m_sceneLighting);
 
 	for (uint8 i = 0; i < MAX_LIGHT_COUNT; ++i)
 	{
-		if (MemoryBuffer* buffer = vulkan->GetUniformBuffer(EUniformBufferIds::Lights, i)) 
+		LightUniform lightUniform
 		{
-			LightUniform lightUniform
+			.location = vec4{ 0.f },
+			.direction = vec4{ 0.f },
+			.color = Color::BLACK,
+			.intensity = 0.f,
+			.constant = 0.f,
+			.linear = 0.f,
+			.quadratic = 0.f,
+			.cutOff = 0.f,
+			.outerCutOff = 0.f,
+			.type = static_cast<uint8>(LightComponent::EType::Directional),
+			.enabled = 0
+		};
+
+		if (i < m_lights.Count())
+		{
+			LightComponent* light = m_lights[i];
+			const Transform* transform = light->Owner()->GetTransform();
+
+			lightUniform =
 			{
-				.location = vec4{ 0.f },
-				.direction = vec4{ 0.f },
-				.color = Color::BLACK,
-				.intensity = 0.f,
-				.constant = 0.f,
-				.linear = 0.f,
-				.quadratic = 0.f,
-				.cutOff = 0.f,
-				.outerCutOff = 0.f,
-				.type = static_cast<uint8>(LightComponent::EType::Directional),
-				.enabled = 0
+				.location = vec4{ transform->Location(), 1.f },
+				// multiply the direction by 50000 to make sure it normalizes to 1
+				.direction = vec4{ glm::normalize(transform->Forward() * 50000.f), 0.f },
+				.color = light->color,
+				.intensity = light->intensity,
+				.constant = light->constant,
+				.linear = light->linear,
+				.quadratic = light->quadratic,
+				.cutOff = light->cutOff,
+				.outerCutOff = light->outerCutOff,
+				.type = static_cast<uint8>(light->type),
+				.enabled = 1
 			};
-
-			if (i < m_lights.Count())
-			{
-				LightComponent* light = m_lights[i]; 
-				const Transform* transform = light->Owner()->GetTransform(); 
-
-				lightUniform =
-				{
-					.location = vec4{ transform->Location(), 1.f },
-					// multiply the direction by 50000 to make sure it normalizes to 1
-					.direction = vec4{ glm::normalize(transform->Forward() * 50000.f), 0.f },
-					.color = light->color,
-					.intensity = light->intensity,
-					.constant = light->constant,
-					.linear = light->linear,
-					.quadratic = light->quadratic,
-					.cutOff = light->cutOff,
-					.outerCutOff = light->outerCutOff,
-					.type = static_cast<uint8>(light->type),
-					.enabled = 1 
-				};
-			}
-
-			buffer->Fill(&lightUniform);
 		}
+
+		m_lightBuffers[i]->Fill(&lightUniform);
 	}
 }
 
@@ -142,7 +154,6 @@ void Lighting::Dbg_ShowGui()
 	ImGui::End();
 }
 #endif // _DEBUG
-
 
 void Lighting::AddLight(LightComponent* light)
 {
