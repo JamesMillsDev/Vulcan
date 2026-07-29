@@ -41,7 +41,24 @@ float3 LightDirection(int32_t index, float3 location)
         return normalize(lights[index].direction.xyz);
 	}
 
-    return normalize(lights[index].location.xyz - location);
+    return normalize(location - lights[index].location.xyz);
+}
+
+float LightAttenuation(int32_t index, float distance)
+{
+    LightUniform light = lights[index];
+
+    if (light.enabled == 0)
+    {
+        return 0;
+    }
+
+    if (light.type == 0)
+    {
+        return 1.0 / (distance * distance);
+    }
+
+    return 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 }
 
 // Normal Distribution Function (D) - GGX/Trowbridge-Reitz Distribution

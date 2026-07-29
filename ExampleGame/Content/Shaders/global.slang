@@ -46,10 +46,23 @@ float4 TransformVertex(VSInput vertex)
     return mul(globals.proj, mul(globals.view, mul(transform.value, vertex.location)));
 }
 
-float3 CalculateNormal(VSOutput vertex, float4 normalValue)
+float3 CalculateNormal(VSOutput vertex, float4 normalValue, int32_t normalMapIndex)
 {
+    float4 normal = normalValue;
+    if (normalMapIndex != -1)
+    {
+        normal.xy = normalValue.ga;
+    }
+
     // Sample normal map and convert from [0,1] to [-1,1] range
-    float3 tangentNormal = normalValue.xyz * 2.0 - 1.0;
+    float3 tangentNormal = normal.xyz * 2.0 - 1.0;
+
+    if (normalMapIndex != -1)
+    {
+        normal.xy = normal.xy * 2.0 - 1.0;
+        normal.z = sqrt(1.0 - dot(normal.xy, normal.xy));
+        tangentNormal = normal.xyz * 2.0 - 1.0;
+    }
 
     // Construct tangent-space to world-space transformation matrix (TBN)
     float3 T = normalize(vertex.tangent.xyz);                         // Tangent

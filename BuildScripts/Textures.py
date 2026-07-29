@@ -20,7 +20,7 @@ def format_for(meta : json):
     else:
         match meta["type"]:
             case "color":
-                format_str += "SRGB"
+                format_str += "SRGB" if meta["srgb"] else "UNORM"
             case "normal":
                 format_str += "UNORM"
 
@@ -60,6 +60,7 @@ def transcode(project_name : str, ktx_sdk : str, texture_extensions : list[str],
             hdr : bool = meta["hdr"] == True
             gen_mips : bool = meta["mipmap"]["generate"] == True
             normal_mode : bool = meta["type"] == "normal"
+            inverted_normals : bool = meta["type"] == "normal"
             mip_settings : list[str] = get_mip_settings(meta["mipmap"], gen_mips)
 
             out_file = Path(input_dir) / Path(str(file.stem))
@@ -78,6 +79,12 @@ def transcode(project_name : str, ktx_sdk : str, texture_extensions : list[str],
                 out_file = str(out_file) + ".exr"
             else:
                 out_file = str(out_file) + ".ktx2"
+
+            if normal_mode == True:
+                run.extend(["--normalize", "--normal-mode"])
+
+                if inverted_normals == True:
+                    run.extend(["--assign-texcoord-origin", "bottom-left"])
 
             run.extend(mip_settings)
 

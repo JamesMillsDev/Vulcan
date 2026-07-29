@@ -1,1 +1,1 @@
-python ./PostBuild.py ../Build/Debug/
+python ./PostBuild.py ..\out\build\x64-Debug\ExampleGame

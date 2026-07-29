@@ -36,7 +36,7 @@ float4 main(VSOutput input) : SV_Target
     float metallic = orm.b;
 
     float4 normalMapSample = TrySampleMap(material.normalIndex, input.uv0, float4(input.normal, 0.0));
-    float3 N = CalculateNormal(input, normalMapSample);
+    float3 N = CalculateNormal(input, normalMapSample, material.normalIndex);
 
     // === LIGHTING SETUP ===
     // Calculate view direction (fragment to camera)
@@ -69,9 +69,8 @@ float4 main(VSOutput input) : SV_Target
 
        // Calculate light direction and attenuation
        float3 L = LightDirection(i, input.fragLocation);      // Light direction
-
        float distance = length(L);   // Distance for falloff
-       float attenuation = 1.0 / (distance * distance);     // Inverse square falloff
+       float attenuation = LightAttenuation(i, distance);
        float3 radiance = lightColor * attenuation;           // Attenuated light color
 
        // Calculate half vector (between view and light directions)

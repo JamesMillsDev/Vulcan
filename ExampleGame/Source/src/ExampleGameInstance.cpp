@@ -15,7 +15,7 @@
 
 using namespace Vulcan;
 
-constexpr int32 LIGHT_COUNT = MAX_LIGHT_COUNT;
+constexpr int32 LIGHT_COUNT = 1; 
 namespace
 {
 	TArray<Actor*, LIGHT_COUNT> lights;
@@ -30,15 +30,15 @@ ExampleGameInstance::ExampleGameInstance() :
 
 void ExampleGameInstance::Init()
 {
-	m_camera = new FlyCamera{ 45.f, .1f, 100.f };
+	m_camera = new FlyCamera{ 45.f, .1f, 100.f }; 
 	m_camera->location = vec3{ 0.f, 2.f, 10.f };
 	m_camera->yaw = 180.f;
 
-	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx"); 
+	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
 	m_material = new Material{ "Shaders/pbr" };
-	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_VariableBlocksVegetation_BC"));
-	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_VariableBlocksVegetation_N"));
-	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_VariableBlocksVegetation_ORM"));
+	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_BC")); 
+	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N"));
+	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_ORM"));
 
 	m_meshActor = GetWorld()->MakeActor<Actor>();
 	m_meshActor->MakeComponent<MeshComponent>(m_mesh, m_material);
@@ -52,13 +52,13 @@ void ExampleGameInstance::Init()
 		lightMaterials[i] = new Material{ "Shaders/unlit" };
 		lightMaterials[i]->color = Color::WHITE;
 
-		Actor* lightActor = GetWorld()->MakeActor<Actor>();
+		Actor* lightActor = GetWorld()->MakeActor<Actor>(); 
 		LightComponent* light = lightActor->MakeComponent<LightComponent>();
 		lightActor->MakeComponent<MeshComponent>(m_cubeMesh, lightMaterials[i]);
 		lightActor->GetTransform()->SetScale(vec3{ .25f });
 
 		light->type = LightComponent::EType::Point;
-		light->color = lightMaterials[i]->color;
+		light->color = lightMaterials[i]->color; 
 
 		lights[i] = lightActor;
 		offset += ANGLE_STEP;
@@ -91,7 +91,7 @@ void ExampleGameInstance::Tick()
 		offset += ANGLE_STEP;
 		vec3 forward = rotationMatrix * vec4{ 0.f, 0.f, 1.f, 0.f };
 
-		light->GetTransform()->SetLocation(forward * 5.f + vec3{ 0.f, 2.5f, 0.f });
+		light->GetTransform()->SetLocation(forward * 15.f + vec3{ 0.f, 2.5f, 0.f });
 	}
 }
 

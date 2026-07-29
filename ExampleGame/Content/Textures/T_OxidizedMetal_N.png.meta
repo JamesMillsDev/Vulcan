@@ -1,6 +1,7 @@
 {
 	"type": "normal",
 	"srgb": false,
+	"normal_inverted": true,
 	"channels": {
 		"size": 8,
 		"count": 4
