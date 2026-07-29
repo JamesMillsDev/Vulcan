@@ -14,7 +14,7 @@ using Vulcan::EInputCodes;
 using Vulcan::GameTime;
 
 FlyCamera::FlyCamera(const float fov, const float near, const float far)
-	: Camera{ fov, near, far }, location{ 0.f, 0.f, 0.f }, m_yaw{ 0 }, m_pitch{ 0 },
+	: Camera{ fov, near, far }, location{ 0.f, 0.f, 0.f }, yaw{ 0 }, pitch{ 0 },
 	m_turnSpeed{ Maths::Radians(180.f) }, m_moveSpeed{ 5.f }, m_lastMouse{ 0.f, 0.f }
 {}
 
@@ -22,8 +22,8 @@ void FlyCamera::GetPvm(GlobalsUniform& pvm) const
 {
 	Camera::GetPvm(pvm);
 
-	const float yawR = Maths::Radians(m_yaw);
-	const float pitchR = Maths::Radians(m_pitch);
+	const float yawR = Maths::Radians(yaw);
+	const float pitchR = Maths::Radians(pitch);
 	const vec3 forward
 	{
 		Maths::Cos(pitchR) * Maths::Sin(yawR),
@@ -58,8 +58,8 @@ void FlyCamera::Tick()
 		glfwSetInputMode(m_window->GlfwHandle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 
-	const float yawR = Maths::Radians(m_yaw);
-	const float pitchR = Maths::Radians(m_pitch);
+	const float yawR = Maths::Radians(yaw);
+	const float pitchR = Maths::Radians(pitch);
 	const vec3 forward
 	{
 		Maths::Cos(pitchR) * Maths::Sin(yawR),
@@ -103,8 +103,8 @@ void FlyCamera::Tick()
 	// If the right button is held down, increment theta and phi (rotate)
 	if (input->IsMouseButtonDown(EInputCodes::MouseButtonRight))
 	{
-		m_yaw -= m_turnSpeed * (mx - m_lastMouse.x) * GameTime::DeltaTime();
-		m_pitch += m_turnSpeed * (my - m_lastMouse.y) * GameTime::DeltaTime();
+		yaw -= m_turnSpeed * (mx - m_lastMouse.x) * GameTime::DeltaTime();
+		pitch += m_turnSpeed * (my - m_lastMouse.y) * GameTime::DeltaTime();
 	}
 
 	m_lastMouse = vec2(mx, my);

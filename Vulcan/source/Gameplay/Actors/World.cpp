@@ -2,12 +2,14 @@
 
 #include "Gameplay/Actors/Transform.h"
 #include "Graphics/Rendering/Lighting.h"
+#include "Graphics/Vulkan/Common.h"
 
 using namespace Vulcan;
 
 World::World()
 	: m_nextObjectIndex{ 0 }, m_root{ new Actor }, m_lighting{ new Lighting }
-{}
+{
+}
 
 World::~World()
 {
@@ -89,7 +91,7 @@ void World::PreRender(Actor* actor)
 
 	actor->GetTransform()->ForEachChild([this](const Transform* child, int index)
 		{
-			Render(child->Owner());
+			PreRender(child->Owner());
 		});
 }
 
@@ -134,6 +136,6 @@ void World::PostRender(Actor* actor)
 
 	actor->GetTransform()->ForEachChild([this](const Transform* child, int index)
 		{
-			Render(child->Owner());
+			PostRender(child->Owner());
 		});
 }

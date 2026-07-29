@@ -32,8 +32,8 @@ namespace Vulcan
 
 	struct MaterialUniform
 	{
-		Color color;
-		Color emissiveTint;
+		vec4 color;
+		vec4 emissiveTint;
 
 		float ao;
 		float roughness;

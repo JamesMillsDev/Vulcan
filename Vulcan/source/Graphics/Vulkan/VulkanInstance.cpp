@@ -152,6 +152,9 @@ VulkanInstance::~VulkanInstance()
 	}
 
 	vkDestroyInstance(m_vkInstance, nullptr);
+
+	delete m_appVersion;
+	delete m_engineVersion;
 }
 
 const VkInstance& VulkanInstance::Get() const

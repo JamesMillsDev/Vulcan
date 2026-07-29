@@ -63,12 +63,12 @@ namespace Vulcan
 		World const* GetWorld() const;
 		uint32 GetObjectIndex() const;
 
-		TList<DirtyTransform> CollectDirtyTransforms() const;
+		TList<DirtyTransform> CollectDirtyTransforms();
 
 	private:
 		void ApplyComponentListChanges();
 
-		void CollectDirtyTransforms(TList<DirtyTransform>& transforms, const Transform* target = nullptr) const;
+		void CollectDirtyTransforms(TList<DirtyTransform>& transforms, Transform* target = nullptr);
 
 	};
 

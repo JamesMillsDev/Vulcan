@@ -1,0 +1,15 @@
+{
+	"type": "normal",
+	"srgb": false,
+	"channels": {
+		"size": 8,
+		"count": 4
+	},
+	"hdr": false,
+	"mipmap": {
+		"generate": false,
+		"filter": "lanczos4",
+		"scale": 1.0,
+		"wrap": "clamp"
+	}
+}

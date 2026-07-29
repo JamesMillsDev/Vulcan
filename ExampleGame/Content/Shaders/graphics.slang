@@ -26,5 +26,5 @@ float4 TrySampleMap(int32_t index, float2 uv, float4 defaultValue)
         return defaultValue;
     }
 
-    return textures[NonUniformResourceIndex(index)].Sample(uv) * defaultValue;
+    return textures[NonUniformResourceIndex(index)].Sample(uv);
 }

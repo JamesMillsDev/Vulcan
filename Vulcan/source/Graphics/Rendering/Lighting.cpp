@@ -19,7 +19,8 @@ const TArray LIGHT_NAMES =
 };
 
 Lighting::Lighting()
-	: m_sceneLighting{ .ambientColor = Color::WHITE, .ambientStrength = .2f }, m_sceneLightingBuffer{ nullptr }
+	: m_sceneLighting{ .ambientColor = Color{ .313f, .313f, .313f, 1.f }, .ambientStrength = .01f },
+	m_sceneLightingBuffer{ nullptr }
 {
 	m_lightBuffers.Resize(MAX_LIGHT_COUNT);
 }

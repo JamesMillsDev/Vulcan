@@ -24,6 +24,7 @@ private:
 
 	Material* m_material;
 	Mesh* m_mesh;
+	Mesh* m_cubeMesh;
 
 public:
 	ExampleGameInstance();

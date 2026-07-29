@@ -17,10 +17,10 @@ class FlyCamera : public Camera
 {
 public:
 	vec3 location;
+	float yaw;
+	float pitch;
 
 private:
-	float m_yaw;
-	float m_pitch;
 
 	float m_turnSpeed;
 	float m_moveSpeed;

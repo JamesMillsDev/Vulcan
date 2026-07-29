@@ -66,7 +66,7 @@ uint32 Actor::GetObjectIndex() const
 	return m_objectIndex;
 }
 
-TList<DirtyTransform> Actor::CollectDirtyTransforms() const
+TList<DirtyTransform> Actor::CollectDirtyTransforms()
 {
 	TList<DirtyTransform> transforms;
 	CollectDirtyTransforms(transforms);
@@ -82,21 +82,30 @@ void Actor::ApplyComponentListChanges()
 	m_componentListChanges.Clear();
 }
 
-void Actor::CollectDirtyTransforms(TList<DirtyTransform>& transforms, const Transform* target) const
+void Actor::CollectDirtyTransforms(TList<DirtyTransform>& transforms, Transform* target)
 {
+	bool isRoot = false;
 	if (target == nullptr)
 	{
 		target = m_transform;
+		isRoot = true;
 	}
 
-	if (m_transform->m_isDirty)
+	if (target->m_isDirty)
 	{
-		transforms.Add({ .index = m_objectIndex, .value = m_transform->LocalToWorld() });
-		target->ForEachChild([&](const Transform* child, int)
+		transforms.Add({ .index = target->Owner()->m_objectIndex, .value = target->LocalToWorld() });
+		target->m_isDirty = false;
+
+		target->ForEachChild([&](Transform* child, int)
 			{
 				CollectDirtyTransforms(transforms, child);
 			});
-
-		m_transform->m_isDirty = false;
+	}
+	else if (isRoot)
+	{
+		target->ForEachChild([&](Transform* child, int)
+			{
+				CollectDirtyTransforms(transforms, child);
+			});
 	}
 }

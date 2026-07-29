@@ -85,13 +85,12 @@ void Material::Dbg_ShowGui()
 
 void Material::FillBuffer(const MaterialBindInfo& bindInfo)
 {
-	// Update the material uniform with this material's data
-	bindInfo.materialUniforms[bindInfo.objectIndex] =
+	const MaterialUniform matUniform = 
 	{
-		.color = color,
-		.emissiveTint = emissiveTint,
+		.color = static_cast<vec4>(color),
+		.emissiveTint = static_cast<vec4>(emissiveTint),
 		.ao = ao,
-		.roughness = 1.f - roughness,
+		.roughness = roughness,
 		.metallic = metallic,
 		.alphaMask = alphaMask,
 		.alphaMaskCutoff = alphaMaskCutoff,
@@ -101,6 +100,13 @@ void Material::FillBuffer(const MaterialBindInfo& bindInfo)
 		.emissiveMap = m_textures[EMISSIVE_MAP_NAME] != nullptr ? m_textures[EMISSIVE_MAP_NAME]->GetId() : -1,
 		.heightMap = m_textures[HEIGHT_MAP_NAME] != nullptr ? m_textures[HEIGHT_MAP_NAME]->GetId() : -1,
 	};
+
+	// Update the material uniform with this material's data
+	const uint64 dynamicAlignment = Vulkan::Device()->DynamicAlignment<MaterialUniform>();
+	uint8_t* basePtr = reinterpret_cast<uint8_t*>(bindInfo.materialUniforms);
+
+	uint8_t* targetPtr = basePtr + bindInfo.objectIndex * dynamicAlignment;
+	std::memcpy(targetPtr, &matUniform, sizeof(MaterialUniform));
 }
 
 void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo)
