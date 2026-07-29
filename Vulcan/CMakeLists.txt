@@ -47,10 +47,13 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/jhasse/poly2tri.git
         GIT_BRANCH master
 )
+FetchContent_Declare(
+        stb
+        GIT_REPOSITORY https://github.com/nothings/stb.git
+        GIT_BRANCH master
+)
 
 SET(GLM_TEST_ENABLE OFF CACHE BOOL "GLM Build unit tests")
-
-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
 
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "Build shared libraries" FORCE)
 set(ASSIMP_BUILD_ZLIB ON CACHE INTERNAL "Build zlib" FORCE)
@@ -64,6 +67,7 @@ FetchContent_MakeAvailable(glfw)
 FetchContent_MakeAvailable(ktx)
 FetchContent_MakeAvailable(box3d)
 FetchContent_MakeAvailable(poly2tri)
+FetchContent_MakeAvailable(stb)
 
 find_package(Vulkan REQUIRED)
 
@@ -90,4 +94,5 @@ target_include_directories(Vulcan
         PUBLIC ${poly2tri_SOURCE_DIR}
         PUBLIC ${Vulkan_INCLUDE_DIRS}
         PUBLIC ${vma_SOURCE_DIR}/include
+        PUBLIC ${stb_SOURCE_DIR}
 )
