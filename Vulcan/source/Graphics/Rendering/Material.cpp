@@ -20,8 +20,13 @@ Material::Material(const string& shaderPath)
 {}
 
 Material::Material(const ShaderConfig& shaderConfig)
+	: Material{ GraphicsPipelineConfig{ shaderConfig } }
+{
+}
+
+Material::Material(const GraphicsPipelineConfig& pipelineConfig)
 	: color{ 0xffffffff }, emissiveTint{ 0x00000000 }, ao{ 0.f }, roughness{ .5f }, metallic{ .5f },
-	alphaMask{ 1.f }, alphaMaskCutoff{ 0.f }, m_pipelineConfig{ shaderConfig }, m_pipeline{ nullptr },
+	alphaMask{ 1.f }, alphaMaskCutoff{ 0.f }, m_pipelineConfig{ pipelineConfig }, m_pipeline{ nullptr },
 	m_shouldUpdateDescriptors{ true }
 {
 	AddTextureMaps();

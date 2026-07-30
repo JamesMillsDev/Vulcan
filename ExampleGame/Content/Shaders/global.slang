@@ -23,6 +23,7 @@ struct GlobalsUniform
 {
     float4x4 proj;
     float4x4 view;
+    float4x4 rotationView;
     float3 cameraLocation;
 
     float exposure;
@@ -37,16 +38,20 @@ struct TransformUniform
 };
 
 static const float PI = 3.14159265359f;
-static const float2 INV_ATAN = float2(0.1591, 0.3183); // 1/(2*PI), 1/PI
 
 [[vk::binding(0, 0)]] ConstantBuffer<GlobalsUniform> globals;
 [[vk::binding(3, 0)]] ConstantBuffer<TransformUniform> transform;
+
+float4 TransformVertex(VSInput vertex)
+{
+    return mul(globals.proj, mul(globals.view, mul(transform.value, vertex.location)));
+}
 
 VSOutput TransferVertex(VSInput vertex)
 {
     VSOutput output;
 
-    output.location = vertex.location;
+    output.location = TransformVertex(vertex);
     output.fragLocation = output.location.xyz;
 
     output.normal = vertex.normal.xyz;
@@ -56,11 +61,6 @@ VSOutput TransferVertex(VSInput vertex)
     output.color = vertex.color;
 
     return output;
-}
-
-float4 TransformVertex(VSInput vertex)
-{
-    return mul(globals.proj, mul(globals.view, mul(transform.value, vertex.location)));
 }
 
 float3 CalculateNormal(VSOutput vertex, float4 normalValue, int32_t normalMapIndex)
@@ -78,8 +78,9 @@ float3 CalculateNormal(VSOutput vertex, float4 normalValue, int32_t normalMapInd
 
 float2 SampleSphericalMap(float3 v)
 {
-    float2 uv = float2(atan2(v.z, v.x), asin(v.y));
-    uv *= INV_ATAN;
-    uv += 0.5;
+    float longitude = atan2(v.z, v.x);
+    float latitude = asin(clamp(v.y, -1.0, 1.0));
+
+    float2 uv = float2(longitude / (2.0 * PI) + 0.5, latitude / PI + 0.5);
     return uv;
 }

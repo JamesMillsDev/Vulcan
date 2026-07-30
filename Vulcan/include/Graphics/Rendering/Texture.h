@@ -7,7 +7,6 @@
 
 #include "Object.h"
 #include "Maths/Alias.h"
-#include "Utility/EnumHelpers.h"
 
 #include "Utility/Collections/TList.h"
 
@@ -31,23 +30,22 @@ namespace Vulcan
 
 	struct TextureLoadInfo
 	{
-		bool isSrgb = true;
-		bool isNormal = false;
-		bool invertGChannel = false;
-		bool isGreyscale = false;
-		bool isCubeMap = false;
-		bool isHdr = false;
+		bool sRgb = true;
+		bool normalMap = false;
+		bool invertGreen = false;
+		bool greyscale = false;
+		bool cubeMap = false;
+		bool hdr = false;
 		uint32 channels = 4;
 		uint32 mipLevels = 1;
 	};
 
 	enum EVulkanFormatMask : uint8
 	{
-		Invalid = 0, // This should not be possible, but it's a safety thing
 		Greyscale = 1 << 0,
 		Rgb = 1 << 1,
 		Alpha = 1 << 2,
-		Srgb = 1 << 3,
+		SRgb = 1 << 3,
 		Hdr = 1 << 4,
 	};
 

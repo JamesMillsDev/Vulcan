@@ -87,6 +87,7 @@ namespace Vulcan
 	public:
 		explicit Material(const string& shaderPath);
 		explicit Material(const ShaderConfig& shaderConfig);
+		explicit Material(const GraphicsPipelineConfig& pipelineConfig);
 		~Material() override;
 
 	public:

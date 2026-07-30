@@ -27,15 +27,15 @@ const TArray TEXTURE_EXTENSIONS =
 const TMap<uint8, VkFormat> FORMATS =
 {
 	{.key = static_cast<uint8>(Greyscale), .value = VK_FORMAT_R8_UNORM },
-	{.key = static_cast<uint8>(Greyscale | Srgb), .value = VK_FORMAT_R8_SRGB },
+	{.key = static_cast<uint8>(Greyscale | SRgb), .value = VK_FORMAT_R8_SRGB },
 	{.key = static_cast<uint8>(Greyscale | Alpha), .value = VK_FORMAT_R8G8_UNORM },
-	{.key = static_cast<uint8>(Greyscale | Srgb | Alpha), .value = VK_FORMAT_R8G8_SRGB },
+	{.key = static_cast<uint8>(Greyscale | SRgb | Alpha), .value = VK_FORMAT_R8G8_SRGB },
 	{.key = static_cast<uint8>(Greyscale | Alpha), .value = VK_FORMAT_R8G8_UNORM },
-	{.key = static_cast<uint8>(Greyscale | Srgb | Alpha), .value = VK_FORMAT_R8G8_SRGB },
+	{.key = static_cast<uint8>(Greyscale | SRgb | Alpha), .value = VK_FORMAT_R8G8_SRGB },
 	{.key = static_cast<uint8>(Rgb), .value = VK_FORMAT_R8G8B8A8_UNORM },
-	{.key = static_cast<uint8>(Rgb | Srgb), .value = VK_FORMAT_R8G8B8_SRGB },
+	{.key = static_cast<uint8>(Rgb | SRgb), .value = VK_FORMAT_R8G8B8_SRGB },
 	{.key = static_cast<uint8>(Rgb | Alpha), .value = VK_FORMAT_R8G8B8A8_UNORM },
-	{.key = static_cast<uint8>(Rgb | Srgb | Alpha), .value = VK_FORMAT_R8G8B8A8_SRGB },
+	{.key = static_cast<uint8>(Rgb | SRgb | Alpha), .value = VK_FORMAT_R8G8B8A8_SRGB },
 	{.key = static_cast<uint8>(Hdr | Rgb), .value = VK_FORMAT_R16G16B16_SFLOAT },
 	{.key = static_cast<uint8>(Hdr | Rgb | Alpha), .value = VK_FORMAT_R16G16B16A16_SFLOAT },
 };
@@ -134,14 +134,14 @@ void Texture::Apply()
 
 void Texture::SetTextureInfo(const TextureLoadInfo& info)
 {
-	m_isSrgb = info.isSrgb;
-	m_isNormal = info.isNormal;
-	m_isCubeMap = info.isCubeMap;
-	m_greenChannelFlipped = info.invertGChannel;
+	m_isSrgb = info.sRgb;
+	m_isNormal = info.normalMap;
+	m_isCubeMap = info.cubeMap;
+	m_greenChannelFlipped = info.invertGreen;
 	m_channels = info.channels;
-	m_isGreyscale = info.isGreyscale;
+	m_isGreyscale = info.greyscale;
 	m_mipLevels = info.mipLevels;
-	m_isHdr = info.isHdr;
+	m_isHdr = info.hdr;
 }
 
 VkFormat Texture::VulkanTexture::GetVulkanFormat(const Texture* texture)
@@ -150,7 +150,7 @@ VkFormat Texture::VulkanTexture::GetVulkanFormat(const Texture* texture)
 
 	if (texture->GetIsSrgb())
 	{
-		mask |= Srgb;
+		mask |= SRgb;
 	}
 	else if (texture->GetIsHdr())
 	{
@@ -176,7 +176,7 @@ Texture::VulkanTexture::VulkanTexture(const uint8* pixels, const uint64 numPixel
 void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numPixels, Texture* texture)
 {
 	int w, h, channels;
-	stbi_uc* px = stbi_load_from_memory(pixels, static_cast<int32>(numPixels), &w, &h, &channels, STBI_rgb_alpha);
+	stbi_uc* px = stbi_load_from_memory(pixels, static_cast<int32>(numPixels), &w, &h, &channels, static_cast<int32>(texture->GetChannels()));
 
 	if (px == nullptr)
 	{

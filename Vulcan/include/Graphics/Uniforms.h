@@ -12,6 +12,7 @@ namespace Vulcan
 	{
 		mat4 proj;
 		mat4 view;
+		mat4 rotationView;
 		vec3 cameraLocation;
 
 		float exposure;

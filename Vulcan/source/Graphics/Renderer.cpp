@@ -14,6 +14,7 @@
 #include "Graphics/Vulkan/Vulkan.h"
 
 using namespace Vulcan;
+using glm::mat3;
 
 Renderer* Renderer::m_instance = nullptr;
 Camera* Renderer::m_currentCamera = nullptr;
@@ -175,6 +176,7 @@ void Renderer::EndFrame()
 void Renderer::UpdateBuffers()
 {
 	m_currentCamera->GetPvm(m_globalsUniform);
+	m_globalsUniform.rotationView = mat4(mat3(m_globalsUniform.view));
 
 	m_globalsUniform.exposure = 4.5f;
 	m_globalsUniform.gamma = 2.2f;
