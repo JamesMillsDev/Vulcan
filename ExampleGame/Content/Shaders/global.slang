@@ -37,9 +37,26 @@ struct TransformUniform
 };
 
 static const float PI = 3.14159265359f;
+static const float2 INV_ATAN = float2(0.1591, 0.3183); // 1/(2*PI), 1/PI
 
 [[vk::binding(0, 0)]] ConstantBuffer<GlobalsUniform> globals;
 [[vk::binding(3, 0)]] ConstantBuffer<TransformUniform> transform;
+
+VSOutput TransferVertex(VSInput vertex)
+{
+    VSOutput output;
+
+    output.location = vertex.location;
+    output.fragLocation = output.location.xyz;
+
+    output.normal = vertex.normal.xyz;
+    output.tangent = vertex.tangent;
+
+    output.uv0 = vertex.uv0;
+    output.color = vertex.color;
+
+    return output;
+}
 
 float4 TransformVertex(VSInput vertex)
 {
@@ -70,4 +87,12 @@ float3 CalculateNormal(VSOutput vertex, float4 normalValue, int32_t normalMapInd
     float3x3 TBN = float3x3(T, B, vertex.normal);                     // Tangent-Bitangent-Normal matrix
 
     return normalize(mul(tangentNormal, TBN));
+}
+
+float2 SampleSphericalMap(float3 v)
+{
+    float2 uv = float2(atan2(v.z, v.x), asin(v.y));
+    uv *= INV_ATAN;
+    uv += 0.5;
+    return uv;
 }

@@ -1,6 +1,6 @@
 .vs/
 .idea/
-3dengine.*
+Vulcan.*
 Build/
 Intermediate/
 *.user
@@ -10,3 +10,4 @@ Intermediate/
 */.vscode/
 *.ktx2
 out/
+CMakeSettings.json

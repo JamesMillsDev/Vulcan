@@ -360,7 +360,7 @@ Mesh* Mesh::MakeFromAssimp(const string& file)
 				vert.color = Color{ 1.f, 1.f, 1.f, 1.f };
 			}
 
-			vertices[v] = vert; 
+			vertices[v] = vert;
 		}
 
 		if (mesh->HasFaces())

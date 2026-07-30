@@ -15,7 +15,7 @@
 
 using namespace Vulcan;
 
-constexpr int32 LIGHT_COUNT = 1; 
+constexpr int32 LIGHT_COUNT = 1;
 namespace
 {
 	TArray<Actor*, LIGHT_COUNT> lights;
@@ -24,13 +24,14 @@ namespace
 }
 constexpr float ANGLE_STEP = 360.f / LIGHT_COUNT;
 
-ExampleGameInstance::ExampleGameInstance() :
-	m_meshActor{ nullptr }, m_camera{ nullptr }, m_material{ nullptr }, m_mesh{ nullptr }, m_cubeMesh{ nullptr }
+ExampleGameInstance::ExampleGameInstance()
+	: m_camera{ nullptr }, m_material{ nullptr }, m_skyboxMaterial{ nullptr }, m_mesh{ nullptr }, m_skybox{ nullptr },
+	m_cubeMesh{ nullptr }
 {}
 
 void ExampleGameInstance::Init()
 {
-	m_camera = new FlyCamera{ 45.f, .1f, 100.f }; 
+	m_camera = new FlyCamera{ 45.f, .1f, 100.f };
 	m_camera->location = vec3{ 0.f, 2.f, 10.f };
 	m_camera->yaw = 180.f;
 
@@ -40,8 +41,8 @@ void ExampleGameInstance::Init()
 	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N"));
 	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_ORM"));
 
-	m_meshActor = GetWorld()->MakeActor<Actor>();
-	m_meshActor->MakeComponent<MeshComponent>(m_mesh, m_material);
+	Actor* meshActor = GetWorld()->MakeActor<Actor>(); 
+	meshActor->MakeComponent<MeshComponent>(m_mesh, m_material);
 	m_material->color = Color{ 1.f, 1.f, 1.f, 1.f };
 
 	m_cubeMesh = Mesh::MakeCube();
@@ -52,13 +53,13 @@ void ExampleGameInstance::Init()
 		lightMaterials[i] = new Material{ "Shaders/unlit" };
 		lightMaterials[i]->color = Color::WHITE;
 
-		Actor* lightActor = GetWorld()->MakeActor<Actor>(); 
+		Actor* lightActor = GetWorld()->MakeActor<Actor>();
 		LightComponent* light = lightActor->MakeComponent<LightComponent>();
 		lightActor->MakeComponent<MeshComponent>(m_cubeMesh, lightMaterials[i]);
 		lightActor->GetTransform()->SetScale(vec3{ .25f });
 
 		light->type = LightComponent::EType::Point;
-		light->color = lightMaterials[i]->color; 
+		light->color = lightMaterials[i]->color;
 
 		lights[i] = lightActor;
 		offset += ANGLE_STEP;
@@ -69,8 +70,11 @@ void ExampleGameInstance::Shutdown()
 {
 	for (Material* material : lightMaterials)
 	{
-		delete material;
+		delete material; 
 	}
+
+	delete m_skybox;
+	delete m_skyboxMaterial;
 
 	delete m_camera;
 	delete m_cubeMesh;

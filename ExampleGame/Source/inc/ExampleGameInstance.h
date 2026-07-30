@@ -19,11 +19,12 @@ using Vulcan::Material;
 class ExampleGameInstance final : public GameInstance
 {
 private:
-	Actor* m_meshActor;
 	FlyCamera* m_camera;
 
 	Material* m_material;
+	Material* m_skyboxMaterial;
 	Mesh* m_mesh;
+	Mesh* m_skybox;
 	Mesh* m_cubeMesh;
 
 public:
