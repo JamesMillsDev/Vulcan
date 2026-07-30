@@ -7,6 +7,7 @@
 
 #include "Object.h"
 #include "Maths/Alias.h"
+#include "Utility/EnumHelpers.h"
 
 #include "Utility/Collections/TList.h"
 
@@ -32,10 +33,22 @@ namespace Vulcan
 	{
 		bool isSrgb = true;
 		bool isNormal = false;
-		bool invertNormals = false;
+		bool invertGChannel = false;
 		bool isGreyscale = false;
+		bool isCubeMap = false;
+		bool isHdr = false;
 		uint32 channels = 4;
 		uint32 mipLevels = 1;
+	};
+
+	enum EVulkanFormatMask : uint8
+	{
+		Invalid = 0, // This should not be possible, but it's a safety thing
+		Greyscale = 1 << 0,
+		Rgb = 1 << 1,
+		Alpha = 1 << 2,
+		Srgb = 1 << 3,
+		Hdr = 1 << 4,
 	};
 
 	class Texture : public Object
@@ -49,7 +62,7 @@ namespace Vulcan
 			friend class Texture;
 
 		private:
-			static VkFormat VkFormatFromStbi(const Texture* texture);
+			static VkFormat GetVulkanFormat(const Texture* texture);
 
 		private:
 			VkImage m_image;
@@ -83,9 +96,6 @@ namespace Vulcan
 		static Texture* LoadFromFile(const string& fileName, const TextureLoadInfo& loadInfo = {});
 
 	private:
-		static int StbiFormatFor(bool greyscale, uint32 channels);
-
-	private:
 		VulkanTexture* m_vulkanTexture;
 		int32 m_id;
 
@@ -107,10 +117,12 @@ namespace Vulcan
 		DEFINE_GETTER_SETTER_VARIABLE(Channels, uint32, channels)
 		DEFINE_GETTER_SETTER_VARIABLE(IsNormal, bool, isNormal)
 		DEFINE_GETTER_SETTER_VARIABLE(IsSrgb, bool, isSrgb)
+		DEFINE_GETTER_SETTER_VARIABLE(IsCubeMap, bool, isCubeMap)
 		DEFINE_GETTER_SETTER_VARIABLE(IsGreyscale, bool, isGreyscale)
-		DEFINE_GETTER_SETTER_VARIABLE(StbiFormat, int, stbiFormat)
+		DEFINE_GETTER_SETTER_VARIABLE(IsHdr, bool, isHdr)
 		DEFINE_GETTER_SETTER_VARIABLE(MipLevels, uint32, mipLevels)
 		DEFINE_GETTER_SETTER_VARIABLE(Format, VkFormat, format)
+		DEFINE_GETTER_SETTER_VARIABLE(BitsPerChannel, uint32, bitsPerChannel)
 		DEFINE_GETTER_SETTER_VARIABLE(GreenChannelFlipped, bool, greenChannelFlipped)
 
 		void Apply();

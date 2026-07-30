@@ -18,7 +18,26 @@ using namespace Vulcan;
 const TArray TEXTURE_EXTENSIONS =
 {
 	".png",
-	".tga"
+	".tga",
+	".jpg",
+	".bmp",
+	".hdr"
+};
+
+const TMap<uint8, VkFormat> FORMATS =
+{
+	{.key = static_cast<uint8>(Greyscale), .value = VK_FORMAT_R8_UNORM },
+	{.key = static_cast<uint8>(Greyscale | Srgb), .value = VK_FORMAT_R8_SRGB },
+	{.key = static_cast<uint8>(Greyscale | Alpha), .value = VK_FORMAT_R8G8_UNORM },
+	{.key = static_cast<uint8>(Greyscale | Srgb | Alpha), .value = VK_FORMAT_R8G8_SRGB },
+	{.key = static_cast<uint8>(Greyscale | Alpha), .value = VK_FORMAT_R8G8_UNORM },
+	{.key = static_cast<uint8>(Greyscale | Srgb | Alpha), .value = VK_FORMAT_R8G8_SRGB },
+	{.key = static_cast<uint8>(Rgb), .value = VK_FORMAT_R8G8B8A8_UNORM },
+	{.key = static_cast<uint8>(Rgb | Srgb), .value = VK_FORMAT_R8G8B8_SRGB },
+	{.key = static_cast<uint8>(Rgb | Alpha), .value = VK_FORMAT_R8G8B8A8_UNORM },
+	{.key = static_cast<uint8>(Rgb | Srgb | Alpha), .value = VK_FORMAT_R8G8B8A8_SRGB },
+	{.key = static_cast<uint8>(Hdr | Rgb), .value = VK_FORMAT_R16G16B16_SFLOAT },
+	{.key = static_cast<uint8>(Hdr | Rgb | Alpha), .value = VK_FORMAT_R16G16B16A16_SFLOAT },
 };
 
 using std::runtime_error;
@@ -65,19 +84,10 @@ Texture* Texture::LoadFromFile(const string& fileName, const TextureLoadInfo& lo
 	return texture;
 }
 
-int Texture::StbiFormatFor(const bool greyscale, uint32 channels)
-{
-	if (greyscale)
-	{
-		return channels == 4 ? STBI_grey_alpha : STBI_grey;
-	}
-
-	return channels == 4 ? STBI_rgb_alpha : STBI_rgb;
-}
-
-Texture::Texture() :
-	m_vulkanTexture{ nullptr }, m_width{ 0 }, m_height{ 0 }, m_channels{ 4 }, m_isNormal{ false }, m_isSrgb{ false },
-	m_isGreyscale{ false }, m_stbiFormat{ STBI_default }, m_mipLevels{ 1 }, m_format{}, m_greenChannelFlipped{ false }
+Texture::Texture()
+	: m_vulkanTexture{ nullptr }, m_width{ 0 }, m_height{ 0 }, m_channels{ 4 }, m_isNormal{ false }, m_isSrgb{ false },
+	m_isCubeMap{ false }, m_isGreyscale{ false }, m_isHdr{ false }, m_mipLevels{ 1 }, m_format{},
+	m_bitsPerChannel{ 8 }, m_greenChannelFlipped{ false }
 {
 	// Get the next available ID (reusing old ones)
 	if (m_freeIds.empty())
@@ -126,57 +136,33 @@ void Texture::SetTextureInfo(const TextureLoadInfo& info)
 {
 	m_isSrgb = info.isSrgb;
 	m_isNormal = info.isNormal;
-	m_greenChannelFlipped = info.invertNormals;
+	m_isCubeMap = info.isCubeMap;
+	m_greenChannelFlipped = info.invertGChannel;
 	m_channels = info.channels;
 	m_isGreyscale = info.isGreyscale;
 	m_mipLevels = info.mipLevels;
-	m_stbiFormat = StbiFormatFor(m_isGreyscale, m_channels);
+	m_isHdr = info.isHdr;
 }
 
-VkFormat Texture::VulkanTexture::VkFormatFromStbi(const Texture* texture)
+VkFormat Texture::VulkanTexture::GetVulkanFormat(const Texture* texture)
 {
+	uint8 mask = texture->GetIsGreyscale() ? Greyscale : Rgb;
+
 	if (texture->GetIsSrgb())
 	{
-		switch (texture->GetStbiFormat())
-		{
-			case STBI_grey:
-			{
-				return VK_FORMAT_R8_SRGB;
-			}
-			case STBI_grey_alpha:
-			{
-				return VK_FORMAT_R8G8_SRGB;
-			}
-			case STBI_rgb: case STBI_rgb_alpha:
-			{
-				return VK_FORMAT_R8G8B8A8_SRGB;
-			}
-			default:
-			{
-				return VK_FORMAT_UNDEFINED;
-			}
-		}
+		mask |= Srgb;
+	}
+	else if (texture->GetIsHdr())
+	{
+		mask |= Hdr;
 	}
 
-	switch (texture->GetStbiFormat())
+	if (texture->GetChannels() == 4)
 	{
-		case STBI_grey:
-		{
-			return VK_FORMAT_R8_UNORM;
-		}
-		case STBI_grey_alpha:
-		{
-			return VK_FORMAT_R8G8_UNORM;
-		}
-		case STBI_rgb: case STBI_rgb_alpha:
-		{
-			return VK_FORMAT_R8G8B8A8_UNORM;
-		}
-		default:
-		{
-			return VK_FORMAT_UNDEFINED;
-		}
+		mask |= Alpha;
 	}
+
+	return FORMATS[mask];
 }
 
 Texture::VulkanTexture::VulkanTexture(const uint8* pixels, const uint64 numPixels, Texture* texture)
@@ -190,7 +176,7 @@ Texture::VulkanTexture::VulkanTexture(const uint8* pixels, const uint64 numPixel
 void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numPixels, Texture* texture)
 {
 	int w, h, channels;
-	stbi_uc* px = stbi_load_from_memory(pixels, static_cast<int32>(numPixels), &w, &h, &channels, texture->GetStbiFormat());
+	stbi_uc* px = stbi_load_from_memory(pixels, static_cast<int32>(numPixels), &w, &h, &channels, STBI_rgb_alpha);
 
 	if (px == nullptr)
 	{
@@ -202,12 +188,12 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	{
 		for (int32 i = 0; i < w * h; ++i)
 		{
-			const int32 index = i * channels + 1;
-			px[index] = 255 - px[index];
+			const int32 index = i * static_cast<int32>(texture->GetChannels());
+			px[index + 1] = 255 - px[index + 1];
 		}
 	}
 
-	m_imageFormat = VkFormatFromStbi(texture);
+	m_imageFormat = GetVulkanFormat(texture);
 	m_imageExtent = { .width = static_cast<uint32>(w), .height = static_cast<uint32>(h), .depth = 1 };
 
 	texture->SetWidth(m_imageExtent.width);
@@ -219,7 +205,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.pNext = nullptr,
-		.flags = 0,
+		.flags = texture->GetIsCubeMap() ? static_cast<VkImageCreateFlags>(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) : 0,
 		.imageType = VK_IMAGE_TYPE_2D,
 		.format = m_imageFormat,
 		.extent = m_imageExtent,
@@ -249,7 +235,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	VkImageViewCreateInfo viewCreateInfo{};
 	viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewCreateInfo.image = m_image;
-	viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewCreateInfo.viewType = texture->GetIsCubeMap() ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
 	viewCreateInfo.format = m_imageFormat;
 
 	viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
