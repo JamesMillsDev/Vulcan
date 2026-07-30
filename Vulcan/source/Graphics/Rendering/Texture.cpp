@@ -1,11 +1,11 @@
 #include "Graphics/Rendering/Texture.h"
 
 #include <format>
-#include <ktxvulkan.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 #include <stdexcept>
 
 #include "Resources.h"
-
 #include "Graphics/Vulkan/CommandManager.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
@@ -17,8 +17,8 @@ using namespace Vulcan;
 
 const TArray TEXTURE_EXTENSIONS =
 {
-	".ktx2",
-	".exr"
+	".png",
+	".tga"
 };
 
 using std::runtime_error;
@@ -26,7 +26,7 @@ using std::runtime_error;
 int32 Texture::m_nextId = 0;
 queue<int32> Texture::m_freeIds;
 
-Texture* Texture::LoadFromFile(const string& fileName)
+Texture* Texture::LoadFromFile(const string& fileName, const TextureLoadInfo& loadInfo)
 {
 	bool found = false;
 	ResourceData resourceData = {};
@@ -54,17 +54,30 @@ Texture* Texture::LoadFromFile(const string& fileName)
 	}
 
 	Texture* texture = new Texture;
-	TList<uint8> pixels; 
+	TList<uint8> pixels;
 	pixels.SetData(resourceData.data, resourceData.length);
 
 	texture->SetPixels(pixels);
+	texture->SetTextureInfo(loadInfo);
+
 	texture->Apply();
 
 	return texture;
 }
 
-Texture::Texture()
-	: m_vulkanTexture{ nullptr }, m_width{ 0 }, m_height{ 0 }, m_isNormal{ false }, m_isSrgb{ false }, m_format{ }
+int Texture::StbiFormatFor(const bool greyscale, uint32 channels)
+{
+	if (greyscale)
+	{
+		return channels == 4 ? STBI_grey_alpha : STBI_grey;
+	}
+
+	return channels == 4 ? STBI_rgb_alpha : STBI_rgb;
+}
+
+Texture::Texture() :
+	m_vulkanTexture{ nullptr }, m_width{ 0 }, m_height{ 0 }, m_channels{ 4 }, m_isNormal{ false }, m_isSrgb{ false },
+	m_isGreyscale{ false }, m_stbiFormat{ STBI_default }, m_mipLevels{ 1 }, m_format{}, m_greenChannelFlipped{ false }
 {
 	// Get the next available ID (reusing old ones)
 	if (m_freeIds.empty())
@@ -109,49 +122,97 @@ void Texture::Apply()
 	m_vulkanTexture = new VulkanTexture{ m_pixels.Data(), static_cast<uint64>(m_pixels.Count()), this };
 }
 
+void Texture::SetTextureInfo(const TextureLoadInfo& info)
+{
+	m_isSrgb = info.isSrgb;
+	m_isNormal = info.isNormal;
+	m_greenChannelFlipped = info.invertNormals;
+	m_channels = info.channels;
+	m_isGreyscale = info.isGreyscale;
+	m_mipLevels = info.mipLevels;
+	m_stbiFormat = StbiFormatFor(m_isGreyscale, m_channels);
+}
+
+VkFormat Texture::VulkanTexture::VkFormatFromStbi(const Texture* texture)
+{
+	if (texture->GetIsSrgb())
+	{
+		switch (texture->GetStbiFormat())
+		{
+			case STBI_grey:
+			{
+				return VK_FORMAT_R8_SRGB;
+			}
+			case STBI_grey_alpha:
+			{
+				return VK_FORMAT_R8G8_SRGB;
+			}
+			case STBI_rgb: case STBI_rgb_alpha:
+			{
+				return VK_FORMAT_R8G8B8A8_SRGB;
+			}
+			default:
+			{
+				return VK_FORMAT_UNDEFINED;
+			}
+		}
+	}
+
+	switch (texture->GetStbiFormat())
+	{
+		case STBI_grey:
+		{
+			return VK_FORMAT_R8_UNORM;
+		}
+		case STBI_grey_alpha:
+		{
+			return VK_FORMAT_R8G8_UNORM;
+		}
+		case STBI_rgb: case STBI_rgb_alpha:
+		{
+			return VK_FORMAT_R8G8B8A8_UNORM;
+		}
+		default:
+		{
+			return VK_FORMAT_UNDEFINED;
+		}
+	}
+}
+
 Texture::VulkanTexture::VulkanTexture(const uint8* pixels, const uint64 numPixels, Texture* texture)
 	: m_image{ VK_NULL_HANDLE }, m_imageAllocation{ VK_NULL_HANDLE },
 	m_imageView{ VK_NULL_HANDLE }, m_sampler{ VK_NULL_HANDLE }, m_imageExtent{ },
-	m_imageFormat{  }, m_textureDescriptors{ }, m_texture{ nullptr }, m_buffer{ VK_NULL_HANDLE }
+	m_imageFormat{  }, m_textureDescriptors{ }, m_buffer{ VK_NULL_HANDLE }
 {
 	CreateBuffer(pixels, numPixels, texture);
 }
 
 void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numPixels, Texture* texture)
 {
-	if (ktx_error_code_e error = ktxTexture2_CreateFromMemory(pixels, numPixels, KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &m_texture);
-		error != KTX_SUCCESS)
+	int w, h, channels;
+	stbi_uc* px = stbi_load_from_memory(pixels, static_cast<int32>(numPixels), &w, &h, &channels, texture->GetStbiFormat());
+
+	if (px == nullptr)
 	{
-		throw runtime_error(std::format("Failed to load texture from file! Error Code: {}", static_cast<int32>(error)));
+		throw runtime_error("Failed to load texture!");
 	}
 
-	ktxTexture2_TranscodeBasis(m_texture, KTX_TTF_BC3_RGBA, KTX_TF_HIGH_QUALITY);
-	// Get the format and extent from the texture
-	m_imageFormat = static_cast<VkFormat>(m_texture->vkFormat); 
-	m_imageExtent.width = m_texture->baseWidth;
-	m_imageExtent.height = m_texture->baseHeight;
-	m_imageExtent.depth = 1;
-
-	texture->SetFormat(m_imageFormat);
-	texture->SetWidth(m_texture->baseWidth);
-	texture->SetHeight(m_texture->baseHeight);
-
-	// Test if the texture is a normal map by looking at the hash list
-	unsigned int len;
-	void* val;
-	if (const char* key = "KTXwriterScParams"; ktxHashList_FindValue(&m_texture->kvDataHead, key, &len, &val) == KTX_SUCCESS)
+	// Flip the green channel if necessary
+	if (texture->GetIsNormal() && texture->GetGreenChannelFlipped())
 	{
-		if (const string params(static_cast<const char*>(val), len); params.find("--normal-mode") != string::npos)
+		for (int32 i = 0; i < w * h; ++i)
 		{
-			texture->SetIsNormal(true);
+			const int32 index = i * channels + 1;
+			px[index] = 255 - px[index];
 		}
 	}
 
-	// Look at the transfer function to test if it is srgb
-	if (ktxTexture2_GetTransferFunction_e(m_texture) == KHR_DF_TRANSFER_SRGB)
-	{
-		texture->SetIsSrgb(true);
-	}
+	m_imageFormat = VkFormatFromStbi(texture);
+	m_imageExtent = { .width = static_cast<uint32>(w), .height = static_cast<uint32>(h), .depth = 1 };
+
+	texture->SetWidth(m_imageExtent.width);
+	texture->SetHeight(m_imageExtent.height);
+	texture->SetFormat(m_imageFormat);
 
 	// Generate the creation info
 	VkImageCreateInfo imageCreateInfo
@@ -162,7 +223,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 		.imageType = VK_IMAGE_TYPE_2D,
 		.format = m_imageFormat,
 		.extent = m_imageExtent,
-		.mipLevels = m_texture->numLevels,
+		.mipLevels = texture->GetMipLevels(),
 		.arrayLayers = 1,
 		.samples = VK_SAMPLE_COUNT_1_BIT,
 		.tiling = VK_IMAGE_TILING_OPTIMAL,
@@ -192,7 +253,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	viewCreateInfo.format = m_imageFormat;
 
 	viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	viewCreateInfo.subresourceRange.levelCount = m_texture->numLevels;
+	viewCreateInfo.subresourceRange.levelCount = texture->GetMipLevels();
 	viewCreateInfo.subresourceRange.layerCount = 1;
 
 	const GraphicsDevice* device = Vulkan::Device();
@@ -204,10 +265,10 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	}
 
 	// Generate the buffer and transition
-	m_buffer = new MemoryBuffer{ m_texture->dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
-	m_buffer->Fill(m_texture->pData);
+	m_buffer = new MemoryBuffer{ static_cast<uint64>(w * h * texture->GetChannels()), VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
+	m_buffer->Fill(px);
 
-	TransitionImage();
+	TransitionImage(w, h, texture->GetMipLevels());
 
 	delete m_buffer;
 	m_buffer = nullptr;
@@ -220,7 +281,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	samplerInfo.anisotropyEnable = VK_TRUE;
 	samplerInfo.maxAnisotropy = 8.f;
-	samplerInfo.maxLod = static_cast<float>(m_texture->numLevels);
+	samplerInfo.maxLod = 1.f;
 
 	if (result = vkCreateSampler(device->Logical(), &samplerInfo, nullptr, &m_sampler);
 		result != VK_SUCCESS)
@@ -229,8 +290,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	}
 
 	// Destroy the texture and set up the descriptors
-	ktxTexture2_Destroy(m_texture);
-	m_texture = nullptr;
+	stbi_image_free(px);
 
 	m_textureDescriptors.sampler = m_sampler;
 	m_textureDescriptors.imageView = m_imageView;
@@ -246,7 +306,7 @@ void Texture::VulkanTexture::DestroyBuffer() const
 	vmaDestroyImage(Vulkan::Allocator(), m_image, m_imageAllocation);
 }
 
-void Texture::VulkanTexture::TransitionImage() const
+void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const uint32 mipLevels) const
 {
 	// Begin the one-time command
 	const CommandManager* cmdManager = Vulkan::CmdManager();
@@ -265,7 +325,7 @@ void Texture::VulkanTexture::TransitionImage() const
 	barrierTexImage.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	barrierTexImage.image = m_image;
 	barrierTexImage.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrierTexImage.subresourceRange.levelCount = m_texture->numLevels;
+	barrierTexImage.subresourceRange.levelCount = mipLevels;
 	barrierTexImage.subresourceRange.layerCount = 1;
 
 	VkDependencyInfo barrierTexInfo{};
@@ -278,23 +338,24 @@ void Texture::VulkanTexture::TransitionImage() const
 
 	// Get the regions to copy and then copy them
 	TList<VkBufferImageCopy> copyRegions;
-	copyRegions.Resize(m_texture->numLevels);
+	copyRegions.Resize(1);
 
-	for (uint32 i = 0; i < m_texture->numLevels; ++i)
+	VkExtent3D imageExtent;
+	imageExtent.width = static_cast<uint32_t>(w);
+	imageExtent.height = static_cast<uint32_t>(h);
+	imageExtent.depth = 1;
+
+	for (int64 i = 0; i < copyRegions.Count(); ++i)
 	{
-		ktx_size_t mipOffset = 0;
-		ktxTexture2_GetImageOffset(m_texture, i, 0, 0, &mipOffset);
-
 		VkBufferImageCopy& copy = copyRegions[i];
 
 		// Assign the copy regions
 		copy = VkBufferImageCopy{};
-		copy.bufferOffset = mipOffset;
+		copy.bufferOffset = 0;
 		copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copy.imageSubresource.mipLevel = i;
+		copy.imageSubresource.mipLevel = static_cast<uint32>(i);
 		copy.imageSubresource.layerCount = 1;
-		copy.bufferOffset = mipOffset;
-		copy.imageExtent = { .width = m_texture->baseWidth >> i, .height = m_texture->baseHeight >> i, .depth = 1 };
+		copy.imageExtent = imageExtent;
 	}
 	vkCmdCopyBufferToImage(
 		commandBuffer, m_buffer->Get(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -312,7 +373,7 @@ void Texture::VulkanTexture::TransitionImage() const
 	barrierTexRead.newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 	barrierTexRead.image = m_image;
 	barrierTexRead.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrierTexRead.subresourceRange.levelCount = m_texture->numLevels;
+	barrierTexRead.subresourceRange.levelCount = 1;
 	barrierTexRead.subresourceRange.layerCount = 1;
 
 	// Submit the pipeline command

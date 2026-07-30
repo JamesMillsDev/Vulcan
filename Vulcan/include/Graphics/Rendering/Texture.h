@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ktx.h>
 #include <queue>
 #include <string>
 #include <vk_mem_alloc.h>
@@ -29,6 +28,16 @@ namespace Vulcan
 {
 	class MemoryBuffer;
 
+	struct TextureLoadInfo
+	{
+		bool isSrgb = true;
+		bool isNormal = false;
+		bool invertNormals = false;
+		bool isGreyscale = false;
+		uint32 channels = 4;
+		uint32 mipLevels = 1;
+	};
+
 	class Texture : public Object
 	{
 		friend class Material;
@@ -38,6 +47,9 @@ namespace Vulcan
 		class VulkanTexture
 		{
 			friend class Texture;
+
+		private:
+			static VkFormat VkFormatFromStbi(const Texture* texture);
 
 		private:
 			VkImage m_image;
@@ -50,7 +62,6 @@ namespace Vulcan
 
 			VkDescriptorImageInfo m_textureDescriptors;
 
-			ktxTexture2* m_texture;
 			MemoryBuffer* m_buffer;
 
 		private:
@@ -60,7 +71,7 @@ namespace Vulcan
 			void CreateBuffer(const uint8* pixels, uint64 numPixels, Texture* texture);
 			void DestroyBuffer() const;
 
-			void TransitionImage() const;
+			void TransitionImage(int32 w, int32 h, uint32 mipLevels) const;
 
 		};
 
@@ -69,7 +80,10 @@ namespace Vulcan
 		static queue<int32> m_freeIds;
 
 	public:
-		static Texture* LoadFromFile(const string& fileName);
+		static Texture* LoadFromFile(const string& fileName, const TextureLoadInfo& loadInfo = {});
+
+	private:
+		static int StbiFormatFor(bool greyscale, uint32 channels);
 
 	private:
 		VulkanTexture* m_vulkanTexture;
@@ -90,11 +104,19 @@ namespace Vulcan
 		DEFINE_GETTER_SETTER(Pixels, const TList<uint8>&, pixels, m_pixels)
 		DEFINE_GETTER_SETTER_VARIABLE(Width, uint32, width)
 		DEFINE_GETTER_SETTER_VARIABLE(Height, uint32, height)
+		DEFINE_GETTER_SETTER_VARIABLE(Channels, uint32, channels)
 		DEFINE_GETTER_SETTER_VARIABLE(IsNormal, bool, isNormal)
 		DEFINE_GETTER_SETTER_VARIABLE(IsSrgb, bool, isSrgb)
+		DEFINE_GETTER_SETTER_VARIABLE(IsGreyscale, bool, isGreyscale)
+		DEFINE_GETTER_SETTER_VARIABLE(StbiFormat, int, stbiFormat)
+		DEFINE_GETTER_SETTER_VARIABLE(MipLevels, uint32, mipLevels)
 		DEFINE_GETTER_SETTER_VARIABLE(Format, VkFormat, format)
+		DEFINE_GETTER_SETTER_VARIABLE(GreenChannelFlipped, bool, greenChannelFlipped)
 
 		void Apply();
+
+	private:
+		void SetTextureInfo(const TextureLoadInfo& info);
 
 	};
 }

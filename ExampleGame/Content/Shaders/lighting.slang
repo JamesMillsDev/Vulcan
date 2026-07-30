@@ -41,7 +41,7 @@ float3 LightDirection(int32_t index, float3 location)
         return normalize(lights[index].direction.xyz);
 	}
 
-    return normalize(location - lights[index].location.xyz);
+    return normalize(lights[index].location.xyz - location);
 }
 
 float LightAttenuation(int32_t index, float distance)

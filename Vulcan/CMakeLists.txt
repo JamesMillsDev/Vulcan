@@ -33,11 +33,6 @@ FetchContent_Declare(
         GIT_TAG 3.4
 )
 FetchContent_Declare(
-        ktx
-        GIT_REPOSITORY https://github.com/KhronosGroup/KTX-Software.git
-        GIT_TAG v4.4.2
-)
-FetchContent_Declare(
         box3d
         GIT_REPOSITORY https://github.com/erincatto/box3d.git
         GIT_TAG v0.1.0
@@ -64,7 +59,6 @@ FetchContent_MakeAvailable(nlohmann_json)
 FetchContent_MakeAvailable(assimp)
 FetchContent_MakeAvailable(vma)
 FetchContent_MakeAvailable(glfw)
-FetchContent_MakeAvailable(ktx)
 FetchContent_MakeAvailable(box3d)
 FetchContent_MakeAvailable(poly2tri)
 FetchContent_MakeAvailable(stb)
@@ -78,7 +72,6 @@ target_link_libraries(Vulcan
         PUBLIC glfw
         PUBLIC Vulkan::Vulkan
         PUBLIC GPUOpen::VulkanMemoryAllocator
-        PUBLIC ktx
         PUBLIC box3d
         PUBLIC poly2tri
 )
