@@ -38,7 +38,7 @@ void ExampleGameInstance::Init()
 	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
 	m_material = new Material{ "Shaders/pbr" };
 	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_BC")); 
-	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N", { .isSrgb = false, .isNormal = true/*, .invertNormals = true*/ }));
+	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N", { .isSrgb = false, .isNormal = true, .invertGChannel = true }));
 	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_ORM", { .isSrgb = false }));
 
 	Actor* meshActor = GetWorld()->MakeActor<Actor>(); 
