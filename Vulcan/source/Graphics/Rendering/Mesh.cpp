@@ -441,6 +441,10 @@ void Mesh::Render(const VkCommandBuffer buffer, const TList<Material*>& material
 		{
 			materials[subMesh->materialIndex]->Bind(buffer, bindInfo);
 		}
+		else
+		{
+			materials[0]->Bind(buffer, bindInfo);
+		}
 
 		vkCmdBindVertexBuffers(buffer, 0, 1, &subMesh->m_vertexBuffer->Get(), offsets);
 		vkCmdBindIndexBuffer(buffer, subMesh->m_vertexBuffer->Get(), subMesh->m_vertexBufferSize, VK_INDEX_TYPE_UINT16);
