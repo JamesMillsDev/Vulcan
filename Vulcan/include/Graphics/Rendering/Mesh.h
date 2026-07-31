@@ -15,6 +15,8 @@ using glm::vec4;
 
 namespace Vulcan
 {
+	class Material;
+	struct MaterialBindInfo;
 	class MemoryBuffer;
 
 	enum : uint8
@@ -61,6 +63,7 @@ namespace Vulcan
 		public:
 			TList<Vertex> vertices;
 			TList<uint16> indices;
+			uint32 materialIndex;
 
 		private:
 			VkDeviceSize m_vertexBufferSize;
@@ -69,7 +72,7 @@ namespace Vulcan
 			MemoryBuffer* m_vertexBuffer;
 
 		public:
-			SubMesh(const TList<Vertex>& vertices, const TList<uint16>& indices);
+			SubMesh(const TList<Vertex>& vertices, const TList<uint16>& indices, uint32 materialIndex);
 			~SubMesh() override;
 
 		public:
@@ -88,9 +91,10 @@ namespace Vulcan
 
 	public:
 		TList<SubMesh*> subMeshes;
+		uint32 materialCount;
 
 	public:
-		explicit Mesh(const TList<SubMesh*>& subMeshes);
+		Mesh(const TList<SubMesh*>& subMeshes, uint32 materialCount);
 		~Mesh() override;
 
 	public:
@@ -100,7 +104,7 @@ namespace Vulcan
 		void CreateBuffers();
 		void DestroyBuffers();
 
-		void Render(VkCommandBuffer buffer, uint32 instances = 1, uint32 firstInstance = 0) const;
+		void Render(VkCommandBuffer buffer, const TList<Material*>& materials, const MaterialBindInfo& bindInfo, uint32 instances = 1, uint32 firstInstance = 0) const;
 
 	};
 }

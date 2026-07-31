@@ -25,7 +25,7 @@ namespace
 constexpr float ANGLE_STEP = 360.f / LIGHT_COUNT;
 
 ExampleGameInstance::ExampleGameInstance() :
-	m_camera{ nullptr }, m_material{ nullptr }, m_mesh{ nullptr }, m_cubeMesh{ nullptr }
+	m_camera{ nullptr }, m_mesh{ nullptr }, m_cubeMesh{ nullptr }
 {}
 
 void ExampleGameInstance::Init()
@@ -34,15 +34,21 @@ void ExampleGameInstance::Init()
 	m_camera->location = vec3{ 0.f, 2.f, 10.f };
 	m_camera->yaw = 180.f;
 
-	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
-	m_material = new Material{ "Shaders/pbr" };
-	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_BC"));
-	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N", { .sRgb = false, .normalMap = true, .invertGreen = true }));
-	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_ORM", { .sRgb = false }));
+	m_mesh = Mesh::MakeFromAssimp("Meshes/SM_SponzaPalace.fbx");
+	for (uint32 i = 0; i < m_mesh->materialCount; ++i)
+	{
+		Material* material = new Material{ "Shaders/pbr" };
+
+		material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile(std::format("Textures/T_Material_{}_BC", i)));
+		material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile(std::format("Textures/T_Material_{}_N", i), { .sRgb = false, .normalMap = true, .invertGreen = true }));
+		material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile(std::format("Textures/T_Material_{}_ORM", i), { .sRgb = false }));
+		material->color = Color{ 1.f, 1.f, 1.f, 1.f };
+
+		m_materials.Add(material);
+	}
 
 	Actor* meshActor = GetWorld()->MakeActor<Actor>();
-	meshActor->MakeComponent<MeshComponent>(m_mesh, m_material);
-	m_material->color = Color{ 1.f, 1.f, 1.f, 1.f };
+	meshActor->MakeComponent<MeshComponent>(m_mesh, m_materials);
 
 	m_cubeMesh = Mesh::MakeCube();
 
@@ -54,7 +60,7 @@ void ExampleGameInstance::Init()
 
 		Actor* lightActor = GetWorld()->MakeActor<Actor>();
 		LightComponent* light = lightActor->MakeComponent<LightComponent>();
-		lightActor->MakeComponent<MeshComponent>(m_cubeMesh, lightMaterials[i]);
+		lightActor->MakeComponent<MeshComponent>(m_cubeMesh, TList<Material*>{ lightMaterials[i] });
 		lightActor->GetTransform()->SetScale(vec3{ .25f });
 
 		light->type = LightComponent::EType::Point;
@@ -75,7 +81,11 @@ void ExampleGameInstance::Shutdown()
 	delete m_camera;
 	delete m_cubeMesh;
 	delete m_mesh;
-	delete m_material;
+
+	for (Material* material : m_materials)
+	{
+		delete material;
+	}
 }
 
 void ExampleGameInstance::Tick()

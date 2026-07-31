@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Gameplay/Actors/Components/IComponent.h"
+#include "Utility/Collections/TList.h"
 
 namespace Vulcan
 {
@@ -11,13 +12,13 @@ namespace Vulcan
 	{
 	private:
 		Mesh* m_mesh;
-		Material* m_material;
+		TList<Material*> m_materials;
 
 	public:
-		MeshComponent(Mesh* mesh, Material* material);
+		explicit MeshComponent(Mesh* mesh, TList<Material*> materials);
 
 	public:
-		Material* GetMaterial() const;
+		Material* GetMaterial(int32 index) const;
 
 		void PreRender() override;
 		void Render() override;

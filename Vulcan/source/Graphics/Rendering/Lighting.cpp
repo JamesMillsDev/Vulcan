@@ -37,7 +37,7 @@ Lighting::Lighting(World* world) :
 	m_skyboxTexture = Texture::LoadCubeMapFromFile("Skyboxes/Default/", { "px", "nx", "py", "ny", "pz", "nz" });
 
 	m_skyboxActor = world->MakeActor<Actor>();
-	m_skyboxActor->MakeComponent<MeshComponent>(m_skyboxMesh, m_skyboxMaterial);
+	m_skyboxActor->MakeComponent<MeshComponent>(m_skyboxMesh, TList{ m_skyboxMaterial });
 }
 
 Lighting::~Lighting()

@@ -8,29 +8,35 @@
 
 using namespace Vulcan;
 
-MeshComponent::MeshComponent(Mesh* mesh, Material* material)
-	: m_mesh{ mesh }, m_material{ material }
+MeshComponent::MeshComponent(Mesh* mesh, TList<Material*> materials)
+	: m_mesh{ mesh }, m_materials{ std::move(materials) }
 {
 	
 }
 
-Material* MeshComponent::GetMaterial() const
+Material* MeshComponent::GetMaterial(const int32 index) const
 {
-	return m_material;
+	return m_materials[index];
 }
 
 void MeshComponent::PreRender()
 {
-	Renderer::Instance()->UpdateBuffer(
-		m_material, Owner()->GetObjectIndex()
-	);
+	for (Material* material : m_materials)
+	{
+		Renderer::Instance()->UpdateBuffer(
+			material, Owner()->GetObjectIndex()
+		);
+	}
 }
 
 void MeshComponent::Render()
 {
 	Renderer::Instance()->Render(
-		m_mesh, m_material, Owner()->GetObjectIndex(), Owner()->GetWorld()->GetLighting()
+		m_mesh, m_materials, Owner()->GetObjectIndex(), Owner()->GetWorld()->GetLighting()
 	);
 
-	m_material->Dbg_ShowGui(); 
+	for (Material* material : m_materials)
+	{
+		material->Dbg_ShowGui();
+	}
 }

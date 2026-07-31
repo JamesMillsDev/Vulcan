@@ -2,6 +2,8 @@
 
 #include <Gameplay/GameInstance.h>
 
+#include "Utility/Collections/TList.h"
+
 namespace Vulcan
 {
 	class Mesh;
@@ -13,13 +15,14 @@ class FlyCamera;
 using Vulcan::GameInstance;
 using Vulcan::Mesh;
 using Vulcan::Material;
+using Vulcan::TList;
 
 class ExampleGameInstance final : public GameInstance
 {
 private:
 	FlyCamera* m_camera;
 
-	Material* m_material;
+	TList<Material*> m_materials;
 	Mesh* m_mesh;
 	Mesh* m_cubeMesh;
 

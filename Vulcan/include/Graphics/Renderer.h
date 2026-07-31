@@ -9,6 +9,7 @@
 #include "Uniforms.h"
 
 #include "Rendering/Camera.h"
+#include "Utility/Collections/TList.h"
 
 struct GLFWwindow;
 
@@ -71,7 +72,7 @@ namespace Vulcan
 
 	public:
 		void UpdateBuffer(Material* material, uint32 objectIndex) const;
-		void Render(const Mesh* mesh, Material* material, uint32 objectIndex, const Lighting* lighting) const;
+		void Render(const Mesh* mesh, const TList<Material*>& materials, uint32 objectIndex, const Lighting* lighting) const;
 
 	private:
 		void BeginFrame();

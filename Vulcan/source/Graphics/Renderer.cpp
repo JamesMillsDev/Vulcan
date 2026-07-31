@@ -141,7 +141,7 @@ void Renderer::UpdateBuffer(Material* material, const uint32 objectIndex) const
 	material->FillBuffer(bindInfo);
 }
 
-void Renderer::Render(const Mesh* mesh, Material* material, const uint32 objectIndex, const Lighting* lighting) const
+void Renderer::Render(const Mesh* mesh, const TList<Material*>& materials, const uint32 objectIndex, const Lighting* lighting) const
 {
 	const MaterialBindInfo bindInfo =
 	{
@@ -155,8 +155,7 @@ void Renderer::Render(const Mesh* mesh, Material* material, const uint32 objectI
 		.lightBuffers = lighting->m_lightBuffers
 	};
 
-	material->Bind(m_frameCmdBuf, bindInfo);
-	mesh->Render(m_frameCmdBuf);
+	mesh->Render(m_frameCmdBuf, materials, bindInfo);
 }
 
 void Renderer::BeginFrame()

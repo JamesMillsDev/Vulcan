@@ -64,6 +64,7 @@ namespace Vulcan
 
 	class Material : public Object
 	{
+		friend class Mesh;
 		friend class Renderer;
 
 	public:

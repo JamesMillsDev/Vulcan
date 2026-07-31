@@ -12,6 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "Resources.h"
+#include "Graphics/Rendering/Material.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
 #include "Maths/Maths.h"
@@ -59,8 +60,8 @@ TArray<VkVertexInputAttributeDescription, VertexAttributeCount> Vertex::GetAttri
 	return attributeDescriptions;
 }
 
-Mesh::SubMesh::SubMesh(const TList<Vertex>& vertices, const TList<uint16>& indices)
-	:vertices{ vertices }, indices{ indices }, m_vertexBufferSize{ sizeof(Vertex) * vertices.Count() },
+Mesh::SubMesh::SubMesh(const TList<Vertex>& vertices, const TList<uint16>& indices, uint32 materialIndex)
+	:vertices{ vertices }, indices{ indices }, materialIndex{ materialIndex }, m_vertexBufferSize{ sizeof(Vertex) * vertices.Count() },
 	m_indexBufferSize{ sizeof(uint16) * indices.Count() }, m_vertexBuffer{ VK_NULL_HANDLE }
 {
 
@@ -140,9 +141,11 @@ Mesh* Mesh::MakeQuad()
 				TList<uint16>
 				{
 					0, 1, 2, 2, 3, 0
-				}
+				},
+				0u
 			}
-		}
+		},
+		1u
 	};
 }
 
@@ -218,7 +221,7 @@ Mesh* Mesh::MakeCube()
 	indices.AddRange({ 16, 19, 17, 17, 19, 18 });
 	indices.AddRange({ 20, 23, 21, 21, 23, 22 });
 
-	return new Mesh{ { new SubMesh { vertices, indices } } };
+	return new Mesh{ { new SubMesh { vertices, indices, 0u } }, 1u };
 }
 
 Mesh* Mesh::MakeSphere(const float radius, const uint8 stacks, const uint8 sectors)
@@ -290,9 +293,10 @@ Mesh* Mesh::MakeSphere(const float radius, const uint8 stacks, const uint8 secto
 		{
 			new SubMesh
 			{
-				vertices, indices
+				vertices, indices, 0u
 			}
-		}
+		},
+		1u
 	};
 }
 
@@ -381,14 +385,14 @@ Mesh* Mesh::MakeFromAssimp(const string& file)
 			}
 		}
 
-		subMeshes.Add(new SubMesh{ vertices, indices });
+		subMeshes.Add(new SubMesh{ vertices, indices, mesh->mMaterialIndex });
 	}
 
-	return new Mesh{ subMeshes };
+	return new Mesh{ subMeshes, scene->HasMaterials() ? scene->mNumMaterials : 1u };
 }
 
-Mesh::Mesh(const TList<SubMesh*>& subMeshes)
-	: subMeshes{ subMeshes }
+Mesh::Mesh(const TList<SubMesh*>& subMeshes, const uint32 materialCount)
+	: subMeshes{ subMeshes }, materialCount{ materialCount }
 {
 	CreateBuffers();
 }
@@ -426,12 +430,18 @@ void Mesh::DestroyBuffers()
 	subMeshes.Clear();
 }
 
-void Mesh::Render(const VkCommandBuffer buffer, const uint32 instances, const uint32 firstInstance) const
+void Mesh::Render(const VkCommandBuffer buffer, const TList<Material*>& materials, const MaterialBindInfo& bindInfo,
+	const uint32 instances, const uint32 firstInstance) const
 {
 	VkDeviceSize offsets[] = { 0 };
 
 	for (SubMesh* subMesh : subMeshes)
 	{
+		if (subMesh->materialIndex < materials.Count())
+		{
+			materials[subMesh->materialIndex]->Bind(buffer, bindInfo);
+		}
+
 		vkCmdBindVertexBuffers(buffer, 0, 1, &subMesh->m_vertexBuffer->Get(), offsets);
 		vkCmdBindIndexBuffer(buffer, subMesh->m_vertexBuffer->Get(), subMesh->m_vertexBufferSize, VK_INDEX_TYPE_UINT16);
 
