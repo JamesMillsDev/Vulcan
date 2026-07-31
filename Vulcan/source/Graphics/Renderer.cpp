@@ -9,6 +9,7 @@
 #include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
+#include "Graphics/Rendering/Texture.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
@@ -149,6 +150,7 @@ void Renderer::Render(const Mesh* mesh, Material* material, const uint32 objectI
 		.materialBuffer = m_materialBuffer,
 		.transformsBuffer = m_transformBuffer,
 		.globalsBuffer = m_globalUniformBuffer,
+		.skyboxDescriptor = lighting->m_skyboxTexture->GetDescriptors(),
 		.sceneLightBuffer = lighting->m_sceneLightingBuffer,
 		.lightBuffers = lighting->m_lightBuffers
 	};

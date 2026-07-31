@@ -9,8 +9,13 @@
 
 namespace Vulcan
 {
-	class MemoryBuffer;
+	class Actor;
 	class LightComponent;
+	class Material;
+	class MemoryBuffer;
+	class Mesh;
+	class Texture;
+	class World;
 
 	constexpr uint8 MAX_LIGHT_COUNT = 10;
 
@@ -48,8 +53,13 @@ namespace Vulcan
 		MemoryBuffer* m_sceneLightingBuffer;
 		TList<MemoryBuffer*> m_lightBuffers;
 
+		Actor* m_skyboxActor;
+		Mesh* m_skyboxMesh;
+		Material* m_skyboxMaterial;
+		Texture* m_skyboxTexture;
+
 	public:
-		Lighting();
+		explicit Lighting(World* world);
 		~Lighting();
 
 	public:

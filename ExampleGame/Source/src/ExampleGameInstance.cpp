@@ -24,9 +24,8 @@ namespace
 }
 constexpr float ANGLE_STEP = 360.f / LIGHT_COUNT;
 
-ExampleGameInstance::ExampleGameInstance()
-	: m_camera{ nullptr }, m_material{ nullptr }, m_skyboxMaterial{ nullptr }, m_mesh{ nullptr }, m_skybox{ nullptr },
-	m_cubeMesh{ nullptr }
+ExampleGameInstance::ExampleGameInstance() :
+	m_camera{ nullptr }, m_material{ nullptr }, m_mesh{ nullptr }, m_cubeMesh{ nullptr }
 {}
 
 void ExampleGameInstance::Init()
@@ -35,22 +34,13 @@ void ExampleGameInstance::Init()
 	m_camera->location = vec3{ 0.f, 2.f, 10.f };
 	m_camera->yaw = 180.f;
 
-	GraphicsPipelineConfig skyboxConfig = GraphicsPipelineConfig{ ShaderConfig{ .name = "Shaders/skybox" } };
-	skyboxConfig.rasterizer.cullMode = VK_CULL_MODE_NONE;
-	m_skybox = Mesh::MakeCube();
-	m_skyboxMaterial = new Material{ skyboxConfig };
-	m_skyboxMaterial->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_DefaultSkybox", { .hdr = true }));
-
-	Actor* skyboxActor = GetWorld()->MakeActor<Actor>();
-	skyboxActor->MakeComponent<MeshComponent>(m_skybox, m_skyboxMaterial);
-
 	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
 	m_material = new Material{ "Shaders/pbr" };
-	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_BC")); 
+	m_material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_BC"));
 	m_material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_N", { .sRgb = false, .normalMap = true, .invertGreen = true }));
 	m_material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_RebarConcrete_ORM", { .sRgb = false }));
 
-	Actor* meshActor = GetWorld()->MakeActor<Actor>(); 
+	Actor* meshActor = GetWorld()->MakeActor<Actor>();
 	meshActor->MakeComponent<MeshComponent>(m_mesh, m_material);
 	m_material->color = Color{ 1.f, 1.f, 1.f, 1.f };
 
@@ -79,11 +69,8 @@ void ExampleGameInstance::Shutdown()
 {
 	for (Material* material : lightMaterials)
 	{
-		delete material; 
+		delete material;
 	}
-
-	delete m_skybox;
-	delete m_skyboxMaterial;
 
 	delete m_camera;
 	delete m_cubeMesh;

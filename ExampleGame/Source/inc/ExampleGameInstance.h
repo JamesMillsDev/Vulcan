@@ -4,14 +4,12 @@
 
 namespace Vulcan
 {
-	class Actor;
 	class Mesh;
 	class Material;
 }
 
 class FlyCamera;
 
-using Vulcan::Actor;
 using Vulcan::GameInstance;
 using Vulcan::Mesh;
 using Vulcan::Material;
@@ -22,9 +20,7 @@ private:
 	FlyCamera* m_camera;
 
 	Material* m_material;
-	Material* m_skyboxMaterial;
 	Mesh* m_mesh;
-	Mesh* m_skybox;
 	Mesh* m_cubeMesh;
 
 public:

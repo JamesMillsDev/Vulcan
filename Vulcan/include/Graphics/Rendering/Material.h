@@ -56,6 +56,8 @@ namespace Vulcan
 		MemoryBuffer* transformsBuffer;
 
 		MemoryBuffer* globalsBuffer;
+
+		VkDescriptorImageInfo skyboxDescriptor;
 		MemoryBuffer* sceneLightBuffer;
 		TList<MemoryBuffer*> lightBuffers;
 	};
@@ -105,7 +107,7 @@ namespace Vulcan
 
 		void ValidatePipeline();
 
-		void InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Texture* texture, uint32 binding) const;
+		void InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const VkDescriptorImageInfo& descriptor, uint32 binding, uint32 id) const;
 		void InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, uint32 binding, VkDescriptorType type, uint32 arrayElem = 0) const;
 
 		void AddTextureMaps();

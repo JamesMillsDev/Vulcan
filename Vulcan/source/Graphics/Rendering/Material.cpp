@@ -133,8 +133,10 @@ void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bin
 			InsertUniformWrite(writes, bindInfo.lightBuffers[i], 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, i);
 		}
 
-		InsertUniformWrite(writes, bindInfo.transformsBuffer, 3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-		InsertUniformWrite(writes, bindInfo.materialBuffer, 4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+		InsertTextureWrite(writes, bindInfo.skyboxDescriptor, 3, 0);
+
+		InsertUniformWrite(writes, bindInfo.transformsBuffer, 4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+		InsertUniformWrite(writes, bindInfo.materialBuffer, 5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
 
 		UpdateDescriptorSets(writes);
 		m_shouldUpdateDescriptors = false;
@@ -147,7 +149,7 @@ void Material::UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const
 	{
 		if (texture->Value() != nullptr)
 		{
-			InsertTextureWrite(writes, texture->Value(), 5);
+			InsertTextureWrite(writes, texture->Value()->GetDescriptors(), 6, texture->Value()->GetId());
 		}
 	}
 
@@ -181,25 +183,22 @@ void Material::ValidatePipeline()
 	}
 }
 
-void Material::InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const Texture* texture, const uint32 binding) const
+void Material::InsertTextureWrite(TList<VkWriteDescriptorSet>& writes, const VkDescriptorImageInfo& descriptor, const uint32 binding, const uint32 id) const
 {
-	if (texture != nullptr)
-	{
-		writes.Add(
-			{
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.pNext = nullptr,
-				.dstSet = m_pipeline->GetDescriptorSet(),
-				.dstBinding = binding,
-				.dstArrayElement = static_cast<uint32>(texture->GetId()),
-				.descriptorCount = 1,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &texture->GetDescriptors(),
-				.pBufferInfo = nullptr,
-				.pTexelBufferView = nullptr
-			}
-		);
-	}
+	writes.Add(
+		{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext = nullptr,
+			.dstSet = m_pipeline->GetDescriptorSet(),
+			.dstBinding = binding,
+			.dstArrayElement = static_cast<uint32>(id),
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo = &descriptor,
+			.pBufferInfo = nullptr,
+			.pTexelBufferView = nullptr
+		}
+	);
 }
 
 void Material::InsertUniformWrite(TList<VkWriteDescriptorSet>& writes, const MemoryBuffer* buffer, const uint32 binding,

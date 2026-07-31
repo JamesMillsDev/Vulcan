@@ -6,10 +6,9 @@
 
 using namespace Vulcan;
 
-World::World()
-	: m_nextObjectIndex{ 0 }, m_root{ new Actor }, m_lighting{ new Lighting }
-{
-}
+World::World() :
+	m_nextObjectIndex{ 0 }, m_root{ new Actor }, m_lighting{ nullptr }
+{}
 
 World::~World()
 {
@@ -48,6 +47,11 @@ Actor* World::GetRootActor() const
 
 void World::Tick(Actor* actor)
 {
+	if (m_lighting == nullptr)
+	{
+		m_lighting = new Lighting{ this };
+	}
+
 	if (actor == nullptr)
 	{
 		m_lighting->UpdateBuffers();

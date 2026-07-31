@@ -16,8 +16,9 @@ struct MaterialUniform
 	int32_t heightIndex;
 };
 
-[[vk::binding(4, 0)]] ConstantBuffer<MaterialUniform> material;
-[[vk::binding(5, 0)]] Sampler2D textures[];
+[[vk::binding(3, 0)]] SamplerCube skybox;
+[[vk::binding(5, 0)]] ConstantBuffer<MaterialUniform> material;
+[[vk::binding(6, 0)]] Sampler2D textures[];
 
 float4 TrySampleMap(int32_t index, float2 uv, float4 defaultValue)
 {

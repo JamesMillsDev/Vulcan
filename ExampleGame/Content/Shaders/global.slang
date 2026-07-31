@@ -40,7 +40,7 @@ struct TransformUniform
 static const float PI = 3.14159265359f;
 
 [[vk::binding(0, 0)]] ConstantBuffer<GlobalsUniform> globals;
-[[vk::binding(3, 0)]] ConstantBuffer<TransformUniform> transform;
+[[vk::binding(4, 0)]] ConstantBuffer<TransformUniform> transform;
 
 float4 TransformVertex(VSInput vertex)
 {

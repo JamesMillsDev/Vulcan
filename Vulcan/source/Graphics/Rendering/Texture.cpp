@@ -15,6 +15,14 @@
 
 using namespace Vulcan;
 
+struct StbiTexture
+{
+	int32 w;
+	int32 h;
+	int32 channels;
+	uint8* pixels;
+};
+
 const TArray TEXTURE_EXTENSIONS =
 {
 	".png",
@@ -73,13 +81,68 @@ Texture* Texture::LoadFromFile(const string& fileName, const TextureLoadInfo& lo
 	}
 
 	Texture* texture = new Texture;
-	TList<uint8> pixels;
-	pixels.SetData(resourceData.data, resourceData.length);
+	TList<uint8> data;
+	data.SetData(resourceData.data, resourceData.length);
 
-	texture->SetPixels(pixels);
+	TList<TList<uint8>> textureData;
+	textureData.Add(data);
+
 	texture->SetTextureInfo(loadInfo);
 
-	texture->Apply();
+	texture->m_vulkanTexture = new VulkanTexture{ textureData, texture };
+
+	return texture;
+}
+
+Texture* Texture::LoadCubeMapFromFile(const string& baseFileName, const TList<string>& fileNames, const TextureLoadInfo& loadInfo)
+{
+	TList<ResourceData> resourceData;
+
+	for (string& fileName : fileNames)
+	{
+		for (const char* ext : TEXTURE_EXTENSIONS)
+		{
+			try
+			{
+				// Attempt to load the texture from memory
+				const string file = baseFileName + fileName + ext;
+				const ResourceData data = Resources::Find(file);
+
+				resourceData.Add(data);
+				break;
+			}
+			catch ([[maybe_unused]] runtime_error& error)
+			{
+				continue;
+			}
+		}
+	}
+
+	if (resourceData.IsEmpty())
+	{
+		Console::Exception("Texture for filename: '" + baseFileName + "' not found!");
+		return nullptr;
+	}
+
+	if (resourceData.Count() != 6)
+	{
+		Console::Exception("CubeMap loading failed! Expected 6 images, but only loaded " + std::to_string(resourceData.Count()));
+		return nullptr;
+	}
+
+	Texture* texture = new Texture;
+
+	TList<TList<uint8>> textureData;
+	for (int64 i = 0; i < resourceData.Count(); ++i)
+	{
+		textureData.Add(TList<uint8>{});
+		textureData[i].SetData(resourceData[i].data, resourceData[i].length);
+	}
+
+	texture->SetIsCubeMap(true);
+	texture->SetTextureInfo(loadInfo);
+
+	texture->m_vulkanTexture = new VulkanTexture{ textureData, texture };
 
 	return texture;
 }
@@ -127,16 +190,10 @@ int32 Texture::GetId() const
 	return m_id;
 }
 
-void Texture::Apply()
-{
-	m_vulkanTexture = new VulkanTexture{ m_pixels.Data(), static_cast<uint64>(m_pixels.Count()), this };
-}
-
 void Texture::SetTextureInfo(const TextureLoadInfo& info)
 {
 	m_isSrgb = info.sRgb;
 	m_isNormal = info.normalMap;
-	m_isCubeMap = info.cubeMap;
 	m_greenChannelFlipped = info.invertGreen;
 	m_channels = info.channels;
 	m_isGreyscale = info.greyscale;
@@ -165,36 +222,49 @@ VkFormat Texture::VulkanTexture::GetVulkanFormat(const Texture* texture)
 	return FORMATS[mask];
 }
 
-Texture::VulkanTexture::VulkanTexture(const uint8* pixels, const uint64 numPixels, Texture* texture)
+Texture::VulkanTexture::VulkanTexture(const TList<TList<uint8>>& textureBinary, Texture* texture)
 	: m_image{ VK_NULL_HANDLE }, m_imageAllocation{ VK_NULL_HANDLE },
 	m_imageView{ VK_NULL_HANDLE }, m_sampler{ VK_NULL_HANDLE }, m_imageExtent{ },
 	m_imageFormat{  }, m_textureDescriptors{ }, m_buffer{ VK_NULL_HANDLE }
 {
-	CreateBuffer(pixels, numPixels, texture);
+	CreateBuffer(textureBinary, texture);
 }
 
-void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numPixels, Texture* texture)
+void Texture::VulkanTexture::CreateBuffer(const TList<TList<uint8>>& textureBinary, Texture* texture)
 {
-	int w, h, channels;
-	stbi_uc* px = stbi_load_from_memory(pixels, static_cast<int32>(numPixels), &w, &h, &channels, static_cast<int32>(texture->GetChannels()));
+	TList<StbiTexture> stbiTextures;
+	uint32 maxW = 0, maxH = 0;
 
-	if (px == nullptr)
+	for (TList<uint8>& textureData : textureBinary)
 	{
-		throw runtime_error("Failed to load texture!");
-	}
+		StbiTexture stbiTexture;
+		stbiTexture.pixels = stbi_load_from_memory(
+			textureData.Data(), static_cast<int32>(textureData.Count()), &stbiTexture.w, &stbiTexture.h,
+			&stbiTexture.channels, static_cast<int32>(texture->GetChannels())
+		);
 
-	// Flip the green channel if necessary
-	if (texture->GetIsNormal() && texture->GetGreenChannelFlipped())
-	{
-		for (int32 i = 0; i < w * h; ++i)
+		if (stbiTexture.pixels == nullptr)
 		{
-			const int32 index = i * static_cast<int32>(texture->GetChannels());
-			px[index + 1] = 255 - px[index + 1];
+			throw runtime_error("Failed to load texture!");
 		}
+
+		// Flip the green channel if necessary
+		if (texture->GetIsNormal() && texture->GetGreenChannelFlipped())
+		{
+			for (int32 i = 0; i < stbiTexture.w * stbiTexture.h; ++i)
+			{
+				const int32 index = i * static_cast<int32>(texture->GetChannels());
+				stbiTexture.pixels[index + 1] = 255 - stbiTexture.pixels[index + 1];
+			}
+		}
+
+		maxW = std::max(static_cast<uint32>(stbiTexture.w), maxW);
+		maxH = std::max(static_cast<uint32>(stbiTexture.h), maxH);
+		stbiTextures.Add(stbiTexture);
 	}
 
 	m_imageFormat = GetVulkanFormat(texture);
-	m_imageExtent = { .width = static_cast<uint32>(w), .height = static_cast<uint32>(h), .depth = 1 };
+	m_imageExtent = { .width = maxW, .height = maxH, .depth = 1 };
 
 	texture->SetWidth(m_imageExtent.width);
 	texture->SetHeight(m_imageExtent.height);
@@ -210,7 +280,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 		.format = m_imageFormat,
 		.extent = m_imageExtent,
 		.mipLevels = texture->GetMipLevels(),
-		.arrayLayers = 1,
+		.arrayLayers = static_cast<uint32>(stbiTextures.Count()),
 		.samples = VK_SAMPLE_COUNT_1_BIT,
 		.tiling = VK_IMAGE_TILING_OPTIMAL,
 		.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -240,7 +310,7 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 
 	viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	viewCreateInfo.subresourceRange.levelCount = texture->GetMipLevels();
-	viewCreateInfo.subresourceRange.layerCount = 1;
+	viewCreateInfo.subresourceRange.layerCount = static_cast<uint32>(stbiTextures.Count());
 
 	const GraphicsDevice* device = Vulkan::Device();
 
@@ -250,11 +320,22 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 		throw Vulkan::VulkanError("Failed to create Image View from texture!", result);
 	}
 
+	uint64 singleTextureLength = static_cast<uint64>(maxW * maxH) * texture->GetChannels();
 	// Generate the buffer and transition
-	m_buffer = new MemoryBuffer{ static_cast<uint64>(w * h * texture->GetChannels()), VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
-	m_buffer->Fill(px);
+	m_buffer = new MemoryBuffer
+	{
+		singleTextureLength * stbiTextures.Count(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+	};
 
-	TransitionImage(w, h, texture->GetMipLevels());
+	for (int64 i = 0; i < stbiTextures.Count(); ++i)
+	{
+		m_buffer->Fill(stbiTextures[i].pixels, singleTextureLength, i * singleTextureLength);
+	}
+
+	TransitionImage(
+		static_cast<int32>(maxW), static_cast<int32>(maxH), static_cast<int32>(stbiTextures.Count()), 
+		static_cast<int32>(texture->GetChannels()), texture->GetMipLevels()
+	);
 
 	delete m_buffer;
 	m_buffer = nullptr;
@@ -276,7 +357,10 @@ void Texture::VulkanTexture::CreateBuffer(const uint8* pixels, const uint64 numP
 	}
 
 	// Destroy the texture and set up the descriptors
-	stbi_image_free(px);
+	for (StbiTexture& tex : stbiTextures)
+	{
+		stbi_image_free(tex.pixels);
+	}
 
 	m_textureDescriptors.sampler = m_sampler;
 	m_textureDescriptors.imageView = m_imageView;
@@ -292,7 +376,7 @@ void Texture::VulkanTexture::DestroyBuffer() const
 	vmaDestroyImage(Vulkan::Allocator(), m_image, m_imageAllocation);
 }
 
-void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const uint32 mipLevels) const
+void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const int32 layerCount, const int32 channelCount, const uint32 mipLevels) const
 {
 	// Begin the one-time command
 	const CommandManager* cmdManager = Vulkan::CmdManager();
@@ -312,7 +396,7 @@ void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const
 	barrierTexImage.image = m_image;
 	barrierTexImage.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrierTexImage.subresourceRange.levelCount = mipLevels;
-	barrierTexImage.subresourceRange.layerCount = 1;
+	barrierTexImage.subresourceRange.layerCount = layerCount;
 
 	VkDependencyInfo barrierTexInfo{};
 	barrierTexInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -324,7 +408,7 @@ void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const
 
 	// Get the regions to copy and then copy them
 	TList<VkBufferImageCopy> copyRegions;
-	copyRegions.Resize(1);
+	copyRegions.Resize(layerCount);
 
 	VkExtent3D imageExtent;
 	imageExtent.width = static_cast<uint32_t>(w);
@@ -337,15 +421,18 @@ void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const
 
 		// Assign the copy regions
 		copy = VkBufferImageCopy{};
-		copy.bufferOffset = 0;
+		copy.bufferOffset = static_cast<VkDeviceSize>(i) *
+			static_cast<VkDeviceSize>(w) *
+			static_cast<VkDeviceSize>(h) *
+			static_cast<VkDeviceSize>(channelCount);
 		copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copy.imageSubresource.mipLevel = static_cast<uint32>(i);
+		copy.imageSubresource.baseArrayLayer = static_cast<uint32>(i);
 		copy.imageSubresource.layerCount = 1;
 		copy.imageExtent = imageExtent;
 	}
 	vkCmdCopyBufferToImage(
 		commandBuffer, m_buffer->Get(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		static_cast<uint32>(copyRegions.size()), copyRegions.Data()
+		static_cast<uint32>(copyRegions.Count()), copyRegions.Data()
 	);
 
 	// Make the barrier readable
@@ -359,8 +446,8 @@ void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const
 	barrierTexRead.newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 	barrierTexRead.image = m_image;
 	barrierTexRead.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrierTexRead.subresourceRange.levelCount = 1;
-	barrierTexRead.subresourceRange.layerCount = 1;
+	barrierTexRead.subresourceRange.levelCount = mipLevels;
+	barrierTexRead.subresourceRange.layerCount = layerCount;
 
 	// Submit the pipeline command
 	barrierTexInfo.pImageMemoryBarriers = &barrierTexRead;

@@ -127,9 +127,9 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		VkDescriptorSetLayoutBinding
 		{
 			.binding = 3,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 			.descriptorCount = 1,
-			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 			.pImmutableSamplers = nullptr
 		},
 		VkDescriptorSetLayoutBinding
@@ -143,6 +143,14 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		VkDescriptorSetLayoutBinding
 		{
 			.binding = 5,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.pImmutableSamplers = nullptr
+		},
+		VkDescriptorSetLayoutBinding
+		{
+			.binding = 6,
 			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 			.descriptorCount = UINT16_MAX,
 			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -151,6 +159,7 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 	};
 	TArray flags =
 	{
+		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
 		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
 		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
 		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
@@ -167,16 +176,6 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		},
 		VkDescriptorPoolSize
 		{
-			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-			.descriptorCount = 1
-		},
-		VkDescriptorPoolSize
-		{
-			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-			.descriptorCount = 1
-		},
-		VkDescriptorPoolSize
-		{
 			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 			.descriptorCount = 1
 		},
@@ -184,6 +183,21 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		{
 			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 			.descriptorCount = MAX_LIGHT_COUNT
+		},
+		VkDescriptorPoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 1
+		},
+		VkDescriptorPoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1
+		},
+		VkDescriptorPoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1
 		},
 		VkDescriptorPoolSize
 		{

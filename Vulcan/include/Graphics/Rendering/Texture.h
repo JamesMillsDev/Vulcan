@@ -34,7 +34,6 @@ namespace Vulcan
 		bool normalMap = false;
 		bool invertGreen = false;
 		bool greyscale = false;
-		bool cubeMap = false;
 		bool hdr = false;
 		uint32 channels = 4;
 		uint32 mipLevels = 1;
@@ -76,13 +75,13 @@ namespace Vulcan
 			MemoryBuffer* m_buffer;
 
 		private:
-			VulkanTexture(const uint8* pixels, uint64 numPixels, Texture* texture);
+			VulkanTexture(const TList<TList<uint8>>& textureBinary, Texture* texture);
 
 		private:
-			void CreateBuffer(const uint8* pixels, uint64 numPixels, Texture* texture);
+			void CreateBuffer(const TList<TList<uint8>>& textureBinary, Texture* texture);
 			void DestroyBuffer() const;
 
-			void TransitionImage(int32 w, int32 h, uint32 mipLevels) const;
+			void TransitionImage(int32 w, int32 h, int32 layerCount, int32 channelCount, uint32 mipLevels) const;
 
 		};
 
@@ -92,12 +91,13 @@ namespace Vulcan
 
 	public:
 		static Texture* LoadFromFile(const string& fileName, const TextureLoadInfo& loadInfo = {});
+		static Texture* LoadCubeMapFromFile(const string& baseFileName, const TList<string>& fileNames, const TextureLoadInfo& loadInfo = {});
 
 	private:
 		VulkanTexture* m_vulkanTexture;
 		int32 m_id;
 
-		TList<uint8> m_pixels;
+		TList<TList<uint8>> m_pixels;
 
 	public:
 		Texture();
@@ -109,7 +109,7 @@ namespace Vulcan
 		[[nodiscard]] const VkDescriptorImageInfo& GetDescriptors() const;
 		[[nodiscard]] int32 GetId() const;
 
-		DEFINE_GETTER_SETTER(Pixels, const TList<uint8>&, pixels, m_pixels)
+		DEFINE_GETTER_SETTER(Pixels, const TList<TList<uint8>>&, pixels, m_pixels)
 		DEFINE_GETTER_SETTER_VARIABLE(Width, uint32, width)
 		DEFINE_GETTER_SETTER_VARIABLE(Height, uint32, height)
 		DEFINE_GETTER_SETTER_VARIABLE(Channels, uint32, channels)
@@ -122,8 +122,6 @@ namespace Vulcan
 		DEFINE_GETTER_SETTER_VARIABLE(Format, VkFormat, format)
 		DEFINE_GETTER_SETTER_VARIABLE(BitsPerChannel, uint32, bitsPerChannel)
 		DEFINE_GETTER_SETTER_VARIABLE(GreenChannelFlipped, bool, greenChannelFlipped)
-
-		void Apply();
 
 	private:
 		void SetTextureInfo(const TextureLoadInfo& info);

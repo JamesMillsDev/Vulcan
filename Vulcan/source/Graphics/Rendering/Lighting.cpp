@@ -5,7 +5,13 @@
 
 #include "Gameplay/Actors/Actor.h"
 #include "Gameplay/Actors/Transform.h"
+#include "Gameplay/Actors/World.h"
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
+#include "Gameplay/Actors/Components/Rendering/MeshComponent.h"
+#include "Graphics/Rendering/Material.h"
+#include "Graphics/Rendering/Mesh.h"
+#include "Graphics/Rendering/Texture.h"
+#include "Graphics/Vulkan/GraphicsPipeline.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
 #include "Graphics/Vulkan/Vulkan.h"
 
@@ -18,15 +24,28 @@ const TArray LIGHT_NAMES =
 	"Spot"
 };
 
-Lighting::Lighting()
-	: m_sceneLighting{ .ambientColor = Color{ .313f, .313f, .313f, 1.f }, .ambientStrength = .01f },
+Lighting::Lighting(World* world) :
+	m_sceneLighting{ .ambientColor = Color{.313f, .313f, .313f, 1.f}, .ambientStrength = .01f },
 	m_sceneLightingBuffer{ nullptr }
 {
 	m_lightBuffers.Resize(MAX_LIGHT_COUNT);
+
+	GraphicsPipelineConfig skyboxConfig = GraphicsPipelineConfig{ ShaderConfig{ .name = "Shaders/skybox" } };
+	skyboxConfig.rasterizer.cullMode = VK_CULL_MODE_NONE;
+	m_skyboxMesh = Mesh::MakeCube();
+	m_skyboxMaterial = new Material{ skyboxConfig };
+	m_skyboxTexture = Texture::LoadCubeMapFromFile("Skyboxes/Default/", { "px", "nx", "py", "ny", "pz", "nz" });
+
+	m_skyboxActor = world->MakeActor<Actor>();
+	m_skyboxActor->MakeComponent<MeshComponent>(m_skyboxMesh, m_skyboxMaterial);
 }
 
 Lighting::~Lighting()
 {
+	delete m_skyboxMesh;
+	delete m_skyboxTexture;
+	delete m_skyboxMaterial;
+
 	delete m_sceneLightingBuffer;
 	for (MemoryBuffer*& lightBuffer : m_lightBuffers)
 	{
