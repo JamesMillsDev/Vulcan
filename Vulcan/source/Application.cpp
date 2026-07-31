@@ -98,8 +98,6 @@ EExitCode Application::Run() const
 
 		m_game->Render();
 		m_game->GetWorld()->PreRender();
-		Renderer::Instance()->UpdateBuffers();
-
 		m_game->GetWorld()->Render();
 		m_game->GetWorld()->PostRender();
 

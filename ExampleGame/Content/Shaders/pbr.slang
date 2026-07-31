@@ -2,13 +2,23 @@ import global;
 import lighting;
 import graphics;
 
+struct PushConstants
+{
+    float4x4 transform;
+    MaterialUniform *material;
+}
+
+// Bind the push constants layout
+[[vk::push_constant]]
+PushConstants pushConstants;
+
 [shader("vertex")]
 VSOutput main(VSInput input)
 {
     VSOutput output;
 
-    output.location = TransformVertex(input);
-    output.fragLocation = mul(transform.value, input.location).xyz;
+    output.location = TransformVertex(input.location, pushConstants.transform);
+    output.fragLocation = mul(pushConstants.transform, input.location).xyz;
     
     output.normal = input.normal.xyz;
     output.tangent = input.tangent;
@@ -22,21 +32,21 @@ VSOutput main(VSInput input)
 [shader("fragment")]
 float4 main(VSOutput input) : SV_Target
 {
-    float4 baseColorSample = TrySampleMap(material.baseColorIndex, input.uv0, material.color);
+    float4 baseColorSample = TrySampleMap(pushConstants.material->baseColorIndex, input.uv0, pushConstants.material->color);
     float4 baseColor = baseColorSample * input.color;
 
-    float4 defaultOrm = float4(material.ao, material.roughness, material.metallic, 1.0);
-    float4 orm = TrySampleMap(material.ormIndex, input.uv0, defaultOrm);
+    float4 defaultOrm = float4(pushConstants.material->ao, pushConstants.material->roughness, pushConstants.material->metallic, 1.0);
+    float4 orm = TrySampleMap(pushConstants.material->ormIndex, input.uv0, defaultOrm);
 
-    float4 emissiveSample = TrySampleMap(material.emissiveIndex, input.uv0, material.emissiveTint);
+    float4 emissiveSample = TrySampleMap(pushConstants.material->emissiveIndex, input.uv0, pushConstants.material->emissiveTint);
     float3 emissive = emissiveSample.rgb;
 
     float ao = orm.r;
     float roughness = orm.g;
     float metallic = orm.b;
 
-    float4 normalMapSample = TrySampleMap(material.normalIndex, input.uv0, float4(input.normal, 0.0));
-    float3 N = CalculateNormal(input, normalMapSample, material.normalIndex);
+    float4 normalMapSample = TrySampleMap(pushConstants.material->normalIndex, input.uv0, float4(input.normal, 0.0));
+    float3 N = CalculateNormal(input, normalMapSample, pushConstants.material->normalIndex);
 
     // === LIGHTING SETUP ===
     // Calculate view direction (fragment to camera)

@@ -59,11 +59,6 @@ namespace Vulcan
 
 		GlobalsUniform m_globalsUniform;
 		MemoryBuffer* m_globalUniformBuffer;
-
-		mat4* m_transforms;
-		MemoryBuffer* m_transformBuffer;
-
-		MaterialUniform* m_materials;
 		MemoryBuffer* m_materialBuffer;
 
 	private:
@@ -71,14 +66,11 @@ namespace Vulcan
 		~Renderer();
 
 	public:
-		void UpdateBuffer(Material* material, uint32 objectIndex) const;
-		void Render(const Mesh* mesh, const TList<Material*>& materials, uint32 objectIndex, const Lighting* lighting) const;
+		void Render(const Mesh* mesh, const TList<Material*>& materials, const mat4& transform, const Lighting* lighting) const;
 
 	private:
 		void BeginFrame();
 		void EndFrame();
-
-		void UpdateBuffers();
 
 	};
 }

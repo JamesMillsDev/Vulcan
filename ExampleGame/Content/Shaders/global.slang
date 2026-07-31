@@ -32,26 +32,20 @@ struct GlobalsUniform
     float scaleIBLAmbient;
 };
 
-struct TransformUniform
-{
-    float4x4 value;
-};
-
 static const float PI = 3.14159265359f;
 
 [[vk::binding(0, 0)]] ConstantBuffer<GlobalsUniform> globals;
-[[vk::binding(4, 0)]] ConstantBuffer<TransformUniform> transform;
 
-float4 TransformVertex(VSInput vertex)
+float4 TransformVertex(float4 vertex, float4x4 transform)
 {
-    return mul(globals.proj, mul(globals.view, mul(transform.value, vertex.location)));
+    return mul(globals.proj, mul(globals.view, mul(transform, vertex)));
 }
 
-VSOutput TransferVertex(VSInput vertex)
+VSOutput TransferVertex(VSInput vertex, float4x4 transform)
 {
     VSOutput output;
 
-    output.location = TransformVertex(vertex);
+    output.location = TransformVertex(vertex.location, transform);
     output.fragLocation = output.location.xyz;
 
     output.normal = vertex.normal.xyz;

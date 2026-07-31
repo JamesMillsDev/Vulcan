@@ -1,10 +1,20 @@
 import global;
 import graphics;
 
+struct PushConstants
+{
+    float4x4 transform;
+    MaterialUniform *material;
+}
+
+// Bind the push constants layout
+[[vk::push_constant]]
+PushConstants pushConstants;
+
 [shader("vertex")]
 VSOutput main(VSInput input)
 {
-    VSOutput output = TransferVertex(input);
+    VSOutput output = TransferVertex(input, pushConstants.transform);
 
     output.fragLocation = input.location.xyz;
     output.location = mul(globals.proj, mul(globals.rotationView, input.location)).xyww;

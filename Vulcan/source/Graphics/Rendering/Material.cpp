@@ -88,9 +88,11 @@ void Material::Dbg_ShowGui()
 }
 #endif
 
-void Material::FillBuffer(const MaterialBindInfo& bindInfo)
+void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo)
 {
-	const MaterialUniform matUniform = 
+	ValidatePipeline();
+
+	const MaterialUniform matUniform =
 	{
 		.color = static_cast<vec4>(color),
 		.emissiveTint = static_cast<vec4>(emissiveTint),
@@ -105,20 +107,9 @@ void Material::FillBuffer(const MaterialBindInfo& bindInfo)
 		.emissiveMap = m_textures[EMISSIVE_MAP_NAME] != nullptr ? m_textures[EMISSIVE_MAP_NAME]->GetId() : -1,
 		.heightMap = m_textures[HEIGHT_MAP_NAME] != nullptr ? m_textures[HEIGHT_MAP_NAME]->GetId() : -1,
 	};
+	bindInfo.materialBuffer->Fill(&matUniform);
 
-	// Update the material uniform with this material's data
-	const uint64 dynamicAlignment = Vulkan::Device()->DynamicAlignment<MaterialUniform>();
-	uint8_t* basePtr = reinterpret_cast<uint8_t*>(bindInfo.materialUniforms);
-
-	uint8_t* targetPtr = basePtr + bindInfo.objectIndex * dynamicAlignment;
-	std::memcpy(targetPtr, &matUniform, sizeof(MaterialUniform));
-}
-
-void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo)
-{
-	ValidatePipeline();
-
-	m_pipeline->Bind(cmdBuffer, bindInfo.objectIndex);
+	m_pipeline->Bind(cmdBuffer, {.transform = bindInfo.transform, .material = bindInfo.materialBuffer->GetAddress() });
 
 	// Update the descriptor sets if needed
 	if (m_shouldUpdateDescriptors)
@@ -135,9 +126,6 @@ void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bin
 
 		InsertTextureWrite(writes, bindInfo.skyboxDescriptor, 3, 0);
 
-		InsertUniformWrite(writes, bindInfo.transformsBuffer, 4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-		InsertUniformWrite(writes, bindInfo.materialBuffer, 5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-
 		UpdateDescriptorSets(writes);
 		m_shouldUpdateDescriptors = false;
 	}
@@ -149,7 +137,7 @@ void Material::UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const
 	{
 		if (texture->Value() != nullptr)
 		{
-			InsertTextureWrite(writes, texture->Value()->GetDescriptors(), 6, texture->Value()->GetId());
+			InsertTextureWrite(writes, texture->Value()->GetDescriptors(), 4, texture->Value()->GetId());
 		}
 	}
 

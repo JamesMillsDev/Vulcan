@@ -50,11 +50,8 @@ namespace Vulcan
 
 	struct MaterialBindInfo
 	{
-		uint32 objectIndex;
-		MaterialUniform* materialUniforms;
+		mat4 transform;
 		MemoryBuffer* materialBuffer;
-		MemoryBuffer* transformsBuffer;
-
 		MemoryBuffer* globalsBuffer;
 
 		VkDescriptorImageInfo skyboxDescriptor;
@@ -101,7 +98,6 @@ namespace Vulcan
 		DEFINE_DEBUG_FUNCTION(ShowGui)
 
 	private:
-		void FillBuffer(const MaterialBindInfo& bindInfo);
 		void Bind(VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo);
 		void UpdateDescriptorSets(TList<VkWriteDescriptorSet>& writes) const;
 		void UpdateUniformDescriptor(const MemoryBuffer* buffer, uint32 binding) const;

@@ -48,20 +48,13 @@ GraphicsPipeline::~GraphicsPipeline()
 	Destroy();
 }
 
-void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, const uint32 objectIndex) const
+void GraphicsPipeline::Bind(const VkCommandBuffer cmdBuffer, const PushConstants& pushConstants) const
 {
-	TArray dynamicOffsets = 
-	{
-		objectIndex * static_cast<uint32>(Vulkan::Device()->DynamicAlignment<mat4>()),
-		objectIndex * static_cast<uint32>(Vulkan::Device()->DynamicAlignment<MaterialUniform>()),
-	}; 
-
-	vkCmdBindDescriptorSets(
-		cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets,
-		dynamicOffsets.Count(), dynamicOffsets.Data()
-	);
+	vkCmdBindDescriptorSets(cmdBuffer, m_bindPoint, m_pipelineLayout, 0, 1, &m_descriptorSets, 0, nullptr);
 
 	vkCmdBindPipeline(cmdBuffer, m_bindPoint, m_pipeline);
+
+	vkCmdPushConstants(cmdBuffer, m_pipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS, 0, sizeof(PushConstants), &pushConstants);
 }
 
 void GraphicsPipeline::SetBindPoint(const VkPipelineBindPoint bindPoint)
@@ -135,22 +128,6 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		VkDescriptorSetLayoutBinding
 		{
 			.binding = 4,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-			.descriptorCount = 1,
-			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-			.pImmutableSamplers = nullptr
-		},
-		VkDescriptorSetLayoutBinding
-		{
-			.binding = 5,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-			.descriptorCount = 1,
-			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-			.pImmutableSamplers = nullptr
-		},
-		VkDescriptorSetLayoutBinding
-		{
-			.binding = 6,
 			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 			.descriptorCount = UINT16_MAX,
 			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -159,8 +136,6 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 	};
 	TArray flags =
 	{
-		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
-		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
 		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
 		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
 		VkDescriptorBindingFlags{ VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT },
@@ -187,16 +162,6 @@ void GraphicsPipeline::InitDescriptors(const VkDevice& device)
 		VkDescriptorPoolSize
 		{
 			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.descriptorCount = 1
-		},
-		VkDescriptorPoolSize
-		{
-			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-			.descriptorCount = 1
-		},
-		VkDescriptorPoolSize
-		{
-			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
 			.descriptorCount = 1
 		},
 		VkDescriptorPoolSize
@@ -282,8 +247,8 @@ void GraphicsPipeline::InitPipeline(const VkDevice& device)
 		.flags = 0,
 		.setLayoutCount = 1,
 		.pSetLayouts = &m_descriptorSetLayout,
-		.pushConstantRangeCount = 0,
-		.pPushConstantRanges = nullptr
+		.pushConstantRangeCount = m_config.pushConstantRanges.Count(),
+		.pPushConstantRanges = m_config.pushConstantRanges.Data()
 	};
 
 	if (result = vkCreatePipelineLayout(device, &plCreateInfo, nullptr, &m_pipelineLayout);

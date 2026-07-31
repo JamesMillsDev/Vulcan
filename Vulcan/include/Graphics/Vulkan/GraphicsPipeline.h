@@ -1,19 +1,26 @@
 #pragma once
 
 #include <string>
-
+#include <glm/mat4x4.hpp>
 #include <vulkan/vulkan.h>
 
-#include "Utility/Collections/TList.h"
+#include "Utility/Collections/TArray.h"
 #include "Utility/Collections/TMap.h"
 #include "Utility/Collections/TSet.h"
 
+using glm::mat4;
 using std::string;
 
 namespace Vulcan
 {
 	struct MaterialUniform;
 	class Vulkan;
+
+	struct PushConstants
+	{
+		mat4 transform;
+		VkDeviceAddress material;
+	};
 
 	struct ShaderConfig
 	{
@@ -78,6 +85,15 @@ namespace Vulcan
 		ColorBlendStateConfig blendState;
 		PrimitiveConfig primitive;
 		MultisamplerConfig multisampler;
+		TArray<VkPushConstantRange, 1> pushConstantRanges
+		{
+			VkPushConstantRange
+			{
+				.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+				.offset = 0,
+				.size = sizeof(PushConstants)
+			}
+		};
 
 	public:
 		explicit GraphicsPipelineConfig(ShaderConfig shader);
@@ -107,7 +123,7 @@ namespace Vulcan
 		~GraphicsPipeline();
 
 	public:
-		void Bind(VkCommandBuffer cmdBuffer, uint32 objectIndex) const;
+		void Bind(VkCommandBuffer cmdBuffer, const PushConstants& pushConstants) const;
 		void SetBindPoint(VkPipelineBindPoint bindPoint);
 
 		VkDescriptorSet GetDescriptorSet() const;

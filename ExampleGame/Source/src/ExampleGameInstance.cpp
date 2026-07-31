@@ -36,14 +36,17 @@ void ExampleGameInstance::Init()
 
 	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
 	
-	Material* material = new Material{ "Shaders/pbr" };
+	for (uint32 i = 0; i < m_mesh->materialCount; i++)
+	{
+		Material* material = new Material{ "Shaders/pbr" };
 
-	material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile("Textures/T_VariableBlocksVegetation_BC"));
-	material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile("Textures/T_VariableBlocksVegetation_N", { .sRgb = false, .normalMap = true, .invertGreen = true }));
-	material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile("Textures/T_VariableBlocksVegetation_ORM", { .sRgb = false }));
-	material->color = Color{ 1.f, 1.f, 1.f, 1.f };
+		material->SetTexture(BASE_COLOR_MAP_NAME, Texture::LoadFromFile(std::format("Textures/T_Material_{}_BC", i)));
+		material->SetTexture(NORMAL_MAP_NAME, Texture::LoadFromFile(std::format("Textures/T_Material_{}_BC", i), { .sRgb = false, .normalMap = true, .invertGreen = true }));
+		material->SetTexture(ORM_MAP_NAME, Texture::LoadFromFile(std::format("Textures/T_Material_{}_BC", i), { .sRgb = false }));
+		material->color = Color{ 1.f, 1.f, 1.f, 1.f };
 
-	m_materials.Add(material);
+		m_materials.Add(material);
+	}
 
 	Actor* meshActor = GetWorld()->MakeActor<Actor>();
 	meshActor->MakeComponent<MeshComponent>(m_mesh, m_materials);
