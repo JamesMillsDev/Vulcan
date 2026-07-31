@@ -332,10 +332,74 @@ void Texture::VulkanTexture::CreateBuffer(const TList<TList<uint8>>& textureBina
 		m_buffer->Fill(stbiTextures[i].pixels, singleTextureLength, i * singleTextureLength);
 	}
 
-	TransitionImage(
-		static_cast<int32>(maxW), static_cast<int32>(maxH), static_cast<int32>(stbiTextures.Count()), 
-		static_cast<int32>(texture->GetChannels()), texture->GetMipLevels()
-	);
+	// Transition the image
+	const CommandManager* cmdManager = Vulkan::CmdManager();
+	cmdManager->ImmediateSubmit([&](const VkCommandBuffer buffer)
+		{
+			// Set up the memory barriers and dependency information
+			VkImageMemoryBarrier2 barrierTexImage{};
+			barrierTexImage.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+			barrierTexImage.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
+			barrierTexImage.srcAccessMask = VK_ACCESS_2_NONE;
+			barrierTexImage.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+			barrierTexImage.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+			barrierTexImage.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			barrierTexImage.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrierTexImage.image = m_image;
+			barrierTexImage.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrierTexImage.subresourceRange.levelCount = texture->GetMipLevels();
+			barrierTexImage.subresourceRange.layerCount = static_cast<uint32>(stbiTextures.Count());
+
+			VkDependencyInfo barrierTexInfo{};
+			barrierTexInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+			barrierTexInfo.imageMemoryBarrierCount = 1;
+			barrierTexInfo.pImageMemoryBarriers = &barrierTexImage;
+
+			// Run the transition
+			vkCmdPipelineBarrier2(buffer, &barrierTexInfo);
+
+			// Get the regions to copy and then copy them
+			TList<VkBufferImageCopy> copyRegions;
+			copyRegions.Resize(stbiTextures.Count());
+
+			for (int64 i = 0; i < copyRegions.Count(); ++i)
+			{
+				VkBufferImageCopy& copy = copyRegions[i];
+
+				// Assign the copy regions
+				copy = VkBufferImageCopy{};
+				copy.bufferOffset = static_cast<VkDeviceSize>(i) *
+					static_cast<VkDeviceSize>(maxW) *
+					static_cast<VkDeviceSize>(maxH) *
+					static_cast<VkDeviceSize>(texture->GetChannels());
+				copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				copy.imageSubresource.baseArrayLayer = static_cast<uint32>(i);
+				copy.imageSubresource.layerCount = 1;
+				copy.imageExtent = m_imageExtent;
+			}
+			vkCmdCopyBufferToImage(
+				buffer, m_buffer->Get(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				static_cast<uint32>(copyRegions.Count()), copyRegions.Data()
+			);
+
+			// Make the barrier readable
+			VkImageMemoryBarrier2 barrierTexRead{};
+			barrierTexRead.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+			barrierTexRead.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
+			barrierTexRead.srcAccessMask = VK_ACCESS_2_NONE;
+			barrierTexRead.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+			barrierTexRead.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+			barrierTexRead.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrierTexRead.newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+			barrierTexRead.image = m_image;
+			barrierTexRead.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrierTexRead.subresourceRange.levelCount = texture->GetMipLevels();
+			barrierTexRead.subresourceRange.layerCount = static_cast<uint32>(stbiTextures.Count());
+
+			// Submit the pipeline command
+			barrierTexInfo.pImageMemoryBarriers = &barrierTexRead;
+			vkCmdPipelineBarrier2(buffer, &barrierTexInfo);
+		});
 
 	delete m_buffer;
 	m_buffer = nullptr;
@@ -374,84 +438,4 @@ void Texture::VulkanTexture::DestroyBuffer() const
 	vkDestroyImageView(device->Logical(), m_imageView, nullptr);
 	vkDestroySampler(device->Logical(), m_sampler, nullptr);
 	vmaDestroyImage(Vulkan::Allocator(), m_image, m_imageAllocation);
-}
-
-void Texture::VulkanTexture::TransitionImage(const int32 w, const int32 h, const int32 layerCount, const int32 channelCount, const uint32 mipLevels) const
-{
-	// Begin the one-time command
-	const CommandManager* cmdManager = Vulkan::CmdManager();
-	VkCommandBuffer commandBuffer;
-	VkFence fence;
-	cmdManager->BeginOneTimeCommand(commandBuffer, fence);
-
-	// Set up the memory barriers and dependency information
-	VkImageMemoryBarrier2 barrierTexImage{};
-	barrierTexImage.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-	barrierTexImage.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
-	barrierTexImage.srcAccessMask = VK_ACCESS_2_NONE;
-	barrierTexImage.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-	barrierTexImage.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-	barrierTexImage.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	barrierTexImage.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrierTexImage.image = m_image;
-	barrierTexImage.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrierTexImage.subresourceRange.levelCount = mipLevels;
-	barrierTexImage.subresourceRange.layerCount = layerCount;
-
-	VkDependencyInfo barrierTexInfo{};
-	barrierTexInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-	barrierTexInfo.imageMemoryBarrierCount = 1;
-	barrierTexInfo.pImageMemoryBarriers = &barrierTexImage;
-
-	// Run the transition
-	vkCmdPipelineBarrier2(commandBuffer, &barrierTexInfo);
-
-	// Get the regions to copy and then copy them
-	TList<VkBufferImageCopy> copyRegions;
-	copyRegions.Resize(layerCount);
-
-	VkExtent3D imageExtent;
-	imageExtent.width = static_cast<uint32_t>(w);
-	imageExtent.height = static_cast<uint32_t>(h);
-	imageExtent.depth = 1;
-
-	for (int64 i = 0; i < copyRegions.Count(); ++i)
-	{
-		VkBufferImageCopy& copy = copyRegions[i];
-
-		// Assign the copy regions
-		copy = VkBufferImageCopy{};
-		copy.bufferOffset = static_cast<VkDeviceSize>(i) *
-			static_cast<VkDeviceSize>(w) *
-			static_cast<VkDeviceSize>(h) *
-			static_cast<VkDeviceSize>(channelCount);
-		copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copy.imageSubresource.baseArrayLayer = static_cast<uint32>(i);
-		copy.imageSubresource.layerCount = 1;
-		copy.imageExtent = imageExtent;
-	}
-	vkCmdCopyBufferToImage(
-		commandBuffer, m_buffer->Get(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		static_cast<uint32>(copyRegions.Count()), copyRegions.Data()
-	);
-
-	// Make the barrier readable
-	VkImageMemoryBarrier2 barrierTexRead{};
-	barrierTexRead.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-	barrierTexRead.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
-	barrierTexRead.srcAccessMask = VK_ACCESS_2_NONE;
-	barrierTexRead.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-	barrierTexRead.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-	barrierTexRead.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrierTexRead.newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
-	barrierTexRead.image = m_image;
-	barrierTexRead.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrierTexRead.subresourceRange.levelCount = mipLevels;
-	barrierTexRead.subresourceRange.layerCount = layerCount;
-
-	// Submit the pipeline command
-	barrierTexInfo.pImageMemoryBarriers = &barrierTexRead;
-	vkCmdPipelineBarrier2(commandBuffer, &barrierTexInfo);
-
-	cmdManager->EndOneTimeCommand(commandBuffer, fence);
 }

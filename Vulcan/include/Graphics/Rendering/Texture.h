@@ -81,8 +81,6 @@ namespace Vulcan
 			void CreateBuffer(const TList<TList<uint8>>& textureBinary, Texture* texture);
 			void DestroyBuffer() const;
 
-			void TransitionImage(int32 w, int32 h, int32 layerCount, int32 channelCount, uint32 mipLevels) const;
-
 		};
 
 	private:

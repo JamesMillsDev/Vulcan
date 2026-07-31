@@ -1,6 +1,10 @@
 #pragma once
 
+#include <functional>
+
 #include "Graphics/Vulkan/Common.h"
+
+using ImmediateSubmitFnc = std::function<void(VkCommandBuffer)>;
 
 namespace Vulcan
 {
@@ -14,9 +18,7 @@ namespace Vulcan
 
 	public:
 		VkCommandBuffer GetFrameCommandBuffer(uint32 frameIndex) const;
-
-		void BeginOneTimeCommand(VkCommandBuffer& buffer, VkFence& fence) const;
-		void EndOneTimeCommand(const VkCommandBuffer& buffer, const VkFence& fence) const;
+		void ImmediateSubmit(const ImmediateSubmitFnc& fnc) const;
 
 	private:
 		explicit CommandManager(const GraphicsDevice* device);
