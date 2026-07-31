@@ -274,6 +274,7 @@ void Vulkan::Init(Config* config, GLFWwindow* window)
 			}
 		);
 
+	#if _DEBUG
 		// ImGui
 		InitAndPushResource(
 			[this, window]
@@ -349,6 +350,7 @@ void Vulkan::Init(Config* config, GLFWwindow* window)
 				ImGui::DestroyContext();
 			}
 		);
+	#endif
 
 		// Set the resize callback
 		glfwSetWindowSizeCallback(window, [](GLFWwindow* _, const int w, const int h)
@@ -426,19 +428,25 @@ VkCommandBuffer Vulkan::BeginFrame()
 	m_swapChain->TransitionFrameImages(cmdBuf, m_imageIndex);
 	m_swapChain->BeginFrameRender(cmdBuf, m_imageIndex, m_clearColor);
 
+#if _DEBUG
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 
 	ImGui::NewFrame();
 	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+#endif
+
 
 	return cmdBuf;
 }
 
 void Vulkan::EndFrame(const VkCommandBuffer cmdBuffer)
 {
+#if _DEBUG
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
+#endif // _DEBUG
+
 
 	// End the rendering and transition the swap chain image
 	Try(

@@ -91,69 +91,6 @@ void CommandManager::ImmediateSubmit(const ImmediateSubmitFnc& fnc) const
 	vkDestroyFence(device->Logical(), fence, nullptr);
 }
 
-//void CommandManager::BeginOneTimeCommand(VkCommandBuffer& buffer, VkFence& fence) const
-//{
-//	const GraphicsDevice* device = Vulkan::Device();
-//
-//	// Attempt to create the one-time fence
-//	VkFenceCreateInfo fenceCreateInfo{};
-//	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-//	Try(
-//		vkCreateFence(device->Logical(), &fenceCreateInfo, nullptr, &fence),
-//		"Failed to create One-Time Fence!"
-//	);
-//
-//	// Attempt to allocate one-time command buffer
-//	VkCommandBufferAllocateInfo cbAllocateInfo{};
-//	cbAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-//	cbAllocateInfo.commandPool = m_commandPool;
-//	cbAllocateInfo.commandBufferCount = 1;
-//
-//	Try(
-//		vkAllocateCommandBuffers(device->Logical(), &cbAllocateInfo, &buffer),
-//		"Failed to create One-Time Command Buffer!"
-//	);
-//
-//	// Attempt to begin the command buffer
-//	VkCommandBufferBeginInfo cbBeginInfo{};
-//	cbBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-//	cbBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-//	Try(
-//		vkBeginCommandBuffer(buffer, &cbBeginInfo),
-//		"Failed to begin One-Time Command Buffer!"
-//	);
-//}
-//
-//void CommandManager::EndOneTimeCommand(const VkCommandBuffer& buffer, const VkFence& fence) const
-//{
-//	const GraphicsDevice* device = Vulkan::Device();
-//
-//	// Attempt to end the command buffer
-//	Try(
-//		vkEndCommandBuffer(buffer),
-//		"Failed to end One-Time Command Buffer!"
-//	);
-//
-//	// Attempt to submit the queue
-//	VkSubmitInfo submitInfo{};
-//	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-//	submitInfo.commandBufferCount = 1;
-//	submitInfo.pCommandBuffers = &buffer;
-//
-//	Try(
-//		vkQueueSubmit(device->Queue(), 1, &submitInfo, fence),
-//		"Failed to submit One-Time Command!"
-//	);
-//
-//	// Wait for the fences to finish
-//	Try(
-//		vkWaitForFences(device->Logical(), 1, &fence, VK_TRUE, UINT64_MAX),
-//		"Fence timed out!"
-//	);
-//
-//	vkDestroyFence(device->Logical(), fence, nullptr);
-//}
-
 CommandManager::CommandManager(const GraphicsDevice* device)
 {
 	// Attempt to create the command pool
