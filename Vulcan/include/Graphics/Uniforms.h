@@ -18,6 +18,6 @@ namespace Vulcan
 		float exposure;
 		float gamma;
 		float prefilteredCubeMipLevels;
-		float scaleIBLAmbient;
+		float scaleIblAmbient = .01f;
 	};
 }

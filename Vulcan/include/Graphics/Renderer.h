@@ -53,13 +53,14 @@ namespace Vulcan
 
 		static void WaitIdle();
 
+	public:
+		GlobalsUniform globalsUniform;
+
 	private:
 		VkCommandBuffer m_frameCmdBuf;
 		Vulkan* m_vulkan;
 
-		GlobalsUniform m_globalsUniform;
 		MemoryBuffer* m_globalUniformBuffer;
-		MemoryBuffer* m_materialBuffer;
 
 	private:
 		explicit Renderer(Config* config, GLFWwindow* window);

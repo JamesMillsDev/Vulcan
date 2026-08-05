@@ -9,6 +9,7 @@
 #include <assimp/scene.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <iostream>
 #include <glm/gtx/quaternion.hpp>
 
 #include "Resources.h"

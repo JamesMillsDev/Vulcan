@@ -9,6 +9,12 @@
 
 using namespace Vulcan;
 
+MeshComponent::MeshComponent(Mesh* mesh, Material* material)
+	: MeshComponent{ mesh, TList{ material } }
+{
+	
+}
+
 MeshComponent::MeshComponent(Mesh* mesh, TList<Material*> materials)
 	: m_mesh{ mesh }, m_materials{ std::move(materials) }
 {

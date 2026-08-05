@@ -18,7 +18,7 @@ VSOutput main(VSInput input)
     VSOutput output;
 
     output.location = TransformVertex(input.location, pushConstants.transform);
-    output.fragLocation = mul(pushConstants.transform, input.location).xyz;
+    output.worldLocation = mul(pushConstants.transform, input.location).xyz;
     
     output.normal = input.normal.xyz;
     output.tangent = input.tangent;
@@ -45,8 +45,7 @@ float4 main(VSOutput input) : SV_Target
     float roughness = orm.g;
     float metallic = orm.b;
 
-    float4 normalMapSample = TrySampleMap(pushConstants.material->normalIndex, input.uv0, float4(input.normal, 0.0));
-    float3 N = CalculateNormal(input, normalMapSample, pushConstants.material->normalIndex);
+    float3 N = TryMapNormals(pushConstants.material->normalIndex, input.uv0, input.normal, input.tangent);
 
     // === LIGHTING SETUP ===
     // Calculate view direction (fragment to camera)
@@ -78,7 +77,7 @@ float4 main(VSOutput input) : SV_Target
        float3 lightColor = light.color.rgb * light.intensity;
 
        // Calculate light direction and attenuation
-       float3 L = LightDirection(i, input.fragLocation);      // Light direction
+       float3 L = LightDirection(i, input.worldLocation); // Light direction
        float distance = length(L);   // Distance for falloff
        float attenuation = LightAttenuation(i, distance);
        float3 radiance = lightColor * attenuation;           // Attenuated light color
@@ -114,13 +113,19 @@ float4 main(VSOutput input) : SV_Target
        // Multiply by incident radiance and cosine foreshortening
        Lo += (kD * baseColor.rgb / PI + specular) * radiance * NdotL;
     }
-    
+
     // === AMBIENT AND EMISSIVE ===
-    // Add simple ambient lighting (should be replaced with IBL in production)
-    float3 ambient = (sceneLighting.ambientColor * sceneLighting.ambientStrength).rgb * baseColor.rgb * ao;
+    float3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    float3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+
+    float3 irradience = skybox.Sample(N).rgb * globals.scaleIBLAmbient;
+    float3 diffuse = irradience * baseColor.rgb;
+
+    float3 ambient = (kD * diffuse) * ao;
 
     // Combine all lighting contributions
-    float3 color = ambient + Lo + emissive;
+    float3 color = diffuse + Lo + emissive;
 
     // === HDR TONE MAPPING AND GAMMA CORRECTION ===
     // Apply Reinhard tone mapping to compress HDR values to [0,1] range
@@ -129,6 +134,5 @@ float4 main(VSOutput input) : SV_Target
     // Apply gamma correction for sRGB display (inverse gamma)
     color = pow(color, float3(1.0 / globals.gamma, 1.0 / globals.gamma, 1.0 / globals.gamma));
 
-    // Output final color with original alpha
     return float4(color, baseColor.a);
 }

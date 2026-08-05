@@ -247,8 +247,8 @@ void GraphicsPipeline::InitPipeline(const VkDevice& device)
 		.flags = 0,
 		.setLayoutCount = 1,
 		.pSetLayouts = &m_descriptorSetLayout,
-		.pushConstantRangeCount = m_config.pushConstantRanges.Count(),
-		.pPushConstantRanges = m_config.pushConstantRanges.Data()
+		.pushConstantRangeCount = 1,
+		.pPushConstantRanges = &m_config.pushConstantRange
 	};
 
 	if (result = vkCreatePipelineLayout(device, &plCreateInfo, nullptr, &m_pipelineLayout);

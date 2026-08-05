@@ -16,7 +16,7 @@ VSOutput main(VSInput input)
 {
     VSOutput output = TransferVertex(input, pushConstants.transform);
 
-    output.fragLocation = input.location.xyz;
+    output.worldLocation = input.location.xyz;
     output.location = mul(globals.proj, mul(globals.rotationView, input.location)).xyww;
 
     return output;
@@ -25,7 +25,7 @@ VSOutput main(VSInput input)
 [shader("fragment")]
 float4 main(VSOutput input) : SV_Target
 {
-    float3 color = skybox.Sample(input.fragLocation.xyz).rgb;
+    float3 color = skybox.Sample(input.worldLocation.xyz).rgb;
 
     //color = color / (color + float3(1.0));
 

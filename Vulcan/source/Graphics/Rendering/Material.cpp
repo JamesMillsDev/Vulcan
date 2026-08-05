@@ -29,6 +29,10 @@ Material::Material(const GraphicsPipelineConfig& pipelineConfig)
 	alphaMask{ 1.f }, alphaMaskCutoff{ 0.f }, m_pipelineConfig{ pipelineConfig }, m_pipeline{ nullptr },
 	m_shouldUpdateDescriptors{ true }
 {
+	m_materialBuffer = new MemoryBuffer{
+		Vulkan::Device()->DynamicAlignment<MaterialUniform>(), VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR
+	};
+
 	AddTextureMaps();
 }
 
@@ -40,8 +44,8 @@ Material::~Material()
 	}
 	m_textures.Clear();
 
+	delete m_materialBuffer;
 	delete m_pipeline;
-	m_pipeline = nullptr;
 }
 
 uint64 Material::GetHashCode() const
@@ -107,9 +111,9 @@ void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bin
 		.emissiveMap = m_textures[EMISSIVE_MAP_NAME] != nullptr ? m_textures[EMISSIVE_MAP_NAME]->GetId() : -1,
 		.heightMap = m_textures[HEIGHT_MAP_NAME] != nullptr ? m_textures[HEIGHT_MAP_NAME]->GetId() : -1,
 	};
-	bindInfo.materialBuffer->Fill(&matUniform);
+	m_materialBuffer->Fill(&matUniform);
 
-	m_pipeline->Bind(cmdBuffer, {.transform = bindInfo.transform, .material = bindInfo.materialBuffer->GetAddress() });
+	m_pipeline->Bind(cmdBuffer, {.transform = bindInfo.transform, .material = m_materialBuffer->GetAddress() });
 
 	// Update the descriptor sets if needed
 	if (m_shouldUpdateDescriptors)

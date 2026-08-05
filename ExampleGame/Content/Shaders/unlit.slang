@@ -17,7 +17,7 @@ VSOutput main(VSInput input)
     VSOutput output;
 
     output.location = TransformVertex(input.location, pushConstants.transform);
-    output.fragLocation = mul(pushConstants.transform, input.location).xyz;
+    output.worldLocation = mul(pushConstants.transform, input.location).xyz;
 
     output.normal = input.normal.xyz;
     output.tangent = input.tangent;

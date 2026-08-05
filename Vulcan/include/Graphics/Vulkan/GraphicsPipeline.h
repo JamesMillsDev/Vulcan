@@ -85,14 +85,11 @@ namespace Vulcan
 		ColorBlendStateConfig blendState;
 		PrimitiveConfig primitive;
 		MultisamplerConfig multisampler;
-		TArray<VkPushConstantRange, 1> pushConstantRanges
+		VkPushConstantRange pushConstantRange
 		{
-			VkPushConstantRange
-			{
-				.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-				.offset = 0,
-				.size = sizeof(PushConstants)
-			}
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.offset = 0,
+			.size = sizeof(PushConstants)
 		};
 
 	public:

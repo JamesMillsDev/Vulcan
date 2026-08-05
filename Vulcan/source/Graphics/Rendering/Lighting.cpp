@@ -8,12 +8,12 @@
 #include "Gameplay/Actors/World.h"
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 #include "Gameplay/Actors/Components/Rendering/MeshComponent.h"
+#include "Graphics/Renderer.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
 #include "Graphics/Rendering/Texture.h"
 #include "Graphics/Vulkan/GraphicsPipeline.h"
 #include "Graphics/Vulkan/MemoryBuffer.h"
-#include "Graphics/Vulkan/Vulkan.h"
 
 using namespace Vulcan;
 
@@ -30,7 +30,7 @@ Lighting::Lighting(World* world) :
 {
 	m_lightBuffers.Resize(MAX_LIGHT_COUNT);
 
-	GraphicsPipelineConfig skyboxConfig = GraphicsPipelineConfig{ ShaderConfig{ .name = "Shaders/skybox" } };
+	GraphicsPipelineConfig skyboxConfig = GraphicsPipelineConfig{ ShaderConfig{.name = "Shaders/skybox"} };
 	skyboxConfig.rasterizer.cullMode = VK_CULL_MODE_NONE;
 	m_skyboxMesh = Mesh::MakeCube();
 	m_skyboxMaterial = new Material{ skyboxConfig };
@@ -91,8 +91,7 @@ void Lighting::UpdateBuffers()
 			lightUniform =
 			{
 				.location = vec4{ transform->Location(), 1.f },
-				// multiply the direction by 50000 to make sure it normalizes to 1
-				.direction = vec4{ glm::normalize(transform->Forward() * 50000.f), 0.f },
+				.direction = vec4{ transform->Forward(), 0.f },
 				.color = light->color,
 				.intensity = light->intensity,
 				.constant = light->constant,
@@ -128,7 +127,9 @@ void Lighting::Dbg_ShowGui()
 		{
 			m_sceneLighting.ambientColor = vec3{ colors[0], colors[1], colors[2] };
 		}
+
 		ImGui::SliderFloat("Strength", &m_sceneLighting.ambientStrength, 0.f, 1.f, "%.2f");
+		ImGui::SliderFloat("IBL Lighting Scale", &Renderer::Instance()->globalsUniform.scaleIblAmbient, .01f, 10.f, "%.2f");
 	}
 	ImGui::PopID();
 

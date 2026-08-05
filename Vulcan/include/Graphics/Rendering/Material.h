@@ -51,7 +51,6 @@ namespace Vulcan
 	struct MaterialBindInfo
 	{
 		mat4 transform;
-		MemoryBuffer* materialBuffer;
 		MemoryBuffer* globalsBuffer;
 
 		VkDescriptorImageInfo skyboxDescriptor;
@@ -80,6 +79,7 @@ namespace Vulcan
 	private:
 		GraphicsPipelineConfig m_pipelineConfig;
 		GraphicsPipeline* m_pipeline;
+		MemoryBuffer* m_materialBuffer;
 		bool m_shouldUpdateDescriptors;
 
 		TMap<string, Texture*> m_textures;

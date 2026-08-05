@@ -72,7 +72,7 @@ void Renderer::WaitIdle()
 }
 
 Renderer::Renderer(Config* config, GLFWwindow* window)
-	: m_frameCmdBuf{ VK_NULL_HANDLE }, m_globalsUniform{  }
+	: globalsUniform{  }, m_frameCmdBuf{ VK_NULL_HANDLE }
 {
 	m_instance = this;
 	InitVulkan(config, window);
@@ -80,13 +80,10 @@ Renderer::Renderer(Config* config, GLFWwindow* window)
 	m_vulkan = Vulkan::Instance();
 
 	m_globalUniformBuffer = new MemoryBuffer{ sizeof(GlobalsUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
-	m_materialBuffer = new MemoryBuffer{ sizeof(MaterialUniform), VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR };
 }
 
 Renderer::~Renderer()
 {
-	delete m_materialBuffer;
-
 	delete m_globalUniformBuffer;
 
 	DestroyVulkan();
@@ -97,7 +94,6 @@ void Renderer::Render(const Mesh* mesh, const TList<Material*>& materials, const
 	const MaterialBindInfo bindInfo =
 	{
 		.transform = transform,
-		.materialBuffer = m_materialBuffer,
 		.globalsBuffer = m_globalUniformBuffer,
 		.skyboxDescriptor = lighting->m_skyboxTexture->GetDescriptors(),
 		.sceneLightBuffer = lighting->m_sceneLightingBuffer,
@@ -116,15 +112,14 @@ void Renderer::BeginFrame()
 
 	m_frameCmdBuf = m_vulkan->BeginFrame();
 
-	m_currentCamera->GetPvm(m_globalsUniform);
-	m_globalsUniform.rotationView = mat4(mat3(m_globalsUniform.view));
+	m_currentCamera->GetPvm(globalsUniform);
+	globalsUniform.rotationView = mat4(mat3(globalsUniform.view));
 
-	m_globalsUniform.exposure = 4.5f;
-	m_globalsUniform.gamma = 2.2f;
-	m_globalsUniform.prefilteredCubeMipLevels = 1.f;
-	m_globalsUniform.scaleIBLAmbient = 1.f;
+	globalsUniform.exposure = 4.5f;
+	globalsUniform.gamma = 2.2f;
+	globalsUniform.prefilteredCubeMipLevels = 1.f;
 
-	m_globalUniformBuffer->Fill(&m_globalsUniform);
+	m_globalUniformBuffer->Fill(&globalsUniform);
 }
 
 void Renderer::EndFrame()

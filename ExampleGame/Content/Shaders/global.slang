@@ -11,7 +11,7 @@ struct VSInput
 struct VSOutput
 {
     float4 location : SV_Position;
-    float3 fragLocation;
+    float3 worldLocation;
     float3 normal;
     float4 tangent;
     
@@ -46,7 +46,7 @@ VSOutput TransferVertex(VSInput vertex, float4x4 transform)
     VSOutput output;
 
     output.location = TransformVertex(vertex.location, transform);
-    output.fragLocation = output.location.xyz;
+    output.worldLocation = output.location.xyz;
 
     output.normal = vertex.normal.xyz;
     output.tangent = vertex.tangent;
@@ -57,17 +57,17 @@ VSOutput TransferVertex(VSInput vertex, float4x4 transform)
     return output;
 }
 
-float3 CalculateNormal(VSOutput vertex, float4 normalValue, int32_t normalMapIndex)
+float3 CalculateNormal(VSOutput vertex, float4 normalValue, int32_t normalMapIndex, out float3x3 tbn)
 {
     // Sample normal map and convert from [0,1] to [-1,1] range
-    float3 tangentNormal = normalValue.xyz * 2.0 - 1.0;
+    float3 tangentNormal = normalize(normalValue.xyz * 2.0 - 1.0);
 
     // Construct tangent-space to world-space transformation matrix (TBN)
-    float3 T = normalize(vertex.tangent.xyz);                         // Tangent
-    float3 B = normalize(cross(vertex.normal, T)) * vertex.tangent.w; // Bitangent (w = handedness)
-    float3x3 TBN = float3x3(T, B, vertex.normal);                     // Tangent-Bitangent-Normal matrix
+    float3 T = normalize(vertex.tangent.xyz);                           // Tangent
+    float3 B = normalize(cross(vertex.normal, T)) * vertex.tangent.w;   // Bitangent (w = handedness)
+    tbn = float3x3(T, B, vertex.normal);                                // Tangent-Bitangent-Normal matrix
 
-    return normalize(mul(tangentNormal, TBN));
+    return normalize(mul(tangentNormal, tbn));
 }
 
 float2 SampleSphericalMap(float3 v)

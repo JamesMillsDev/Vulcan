@@ -15,6 +15,7 @@ namespace Vulcan
 		TList<Material*> m_materials;
 
 	public:
+		explicit MeshComponent(Mesh* mesh, Material* material);
 		explicit MeshComponent(Mesh* mesh, TList<Material*> materials);
 
 	public:
