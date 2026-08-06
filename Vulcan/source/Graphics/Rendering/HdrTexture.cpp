@@ -4,9 +4,9 @@
 
 using namespace Vulcan;
 
-HdrTexture* HdrTexture::LoadFromFile(const string& fileName)
+HdrTexture* HdrTexture::LoadFromFile(const string& fileName, const bool flipV)
 {
-	ResourceData resourceData = {};
+	ResourceData resourceData;
 
 	try
 	{
@@ -27,7 +27,7 @@ HdrTexture* HdrTexture::LoadFromFile(const string& fileName)
 
 	texture->SetTextureInfo({ .sRgb = false });
 
-	texture->m_vulkanTexture = new VulkanTexture{ textureData, texture, true };
+	texture->m_vulkanTexture = new VulkanTexture{ textureData, texture, true, flipV };
 
 	return texture;
 }

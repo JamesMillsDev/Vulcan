@@ -13,7 +13,7 @@ namespace Vulcan
 		friend class Renderer;
 
 	public:
-		static HdrTexture* LoadFromFile(const string& fileName);
+		static HdrTexture* LoadFromFile(const string& fileName, bool flipV = true);
 
 	};
 }

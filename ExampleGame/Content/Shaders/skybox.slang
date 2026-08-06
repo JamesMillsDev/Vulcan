@@ -28,7 +28,5 @@ float4 main(VSOutput input) : SV_Target
 {
     float3 color = skybox.Sample(UvMapSphere(input.worldLocation.xyz)).rgb;
 
-    //color = color / (color + float3(1.0));
-
     return float4(color, 1.0);
 }

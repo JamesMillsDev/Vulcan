@@ -5,6 +5,7 @@
 #include "Application.h"
 #include "Gameplay/Actors/World.h"
 #include "Graphics/Rendering/Camera.h"
+#include "Graphics/Rendering/HdrTexture.h"
 #include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"

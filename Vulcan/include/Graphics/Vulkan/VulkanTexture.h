@@ -73,10 +73,10 @@ namespace Vulcan
 		MemoryBuffer* m_buffer;
 
 	private:
-		VulkanTexture(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr);
+		VulkanTexture(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr, bool flipV = false);
 
 	private:
-		void CreateBuffer(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr);
+		void CreateBuffer(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr, bool flipV);
 		void DestroyBuffer() const;
 
 	};
@@ -130,19 +130,24 @@ namespace Vulcan
 	}
 
 	template<typename T>
-	VulkanTexture<T>::VulkanTexture(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr)
+	VulkanTexture<T>::VulkanTexture(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr, bool flipV)
 		: m_image{ VK_NULL_HANDLE }, m_imageAllocation{ VK_NULL_HANDLE },
 		m_imageView{ VK_NULL_HANDLE }, m_sampler{ VK_NULL_HANDLE }, m_imageExtent{ },
 		m_imageFormat{  }, m_textureDescriptors{ }, m_buffer{ VK_NULL_HANDLE }
 	{
-		CreateBuffer(textureBinary, texture, hdr);
+		CreateBuffer(textureBinary, texture, hdr, flipV);
 	}
 
 	template<typename T>
-	void VulkanTexture<T>::CreateBuffer(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr)
+	void VulkanTexture<T>::CreateBuffer(const TList<TList<uint8>>& textureBinary, ITexture<T>* texture, bool hdr, bool flipV)
 	{
 		TList<StbiTexture> stbiTextures;
 		uint32 maxW = 0, maxH = 0;
+
+		if (flipV)
+		{
+			stbi_set_flip_vertically_on_load(true);
+		}
 
 		for (TList<uint8>& textureData : textureBinary)
 		{
@@ -354,6 +359,8 @@ namespace Vulcan
 		m_textureDescriptors.sampler = m_sampler;
 		m_textureDescriptors.imageView = m_imageView;
 		m_textureDescriptors.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+
+		stbi_set_flip_vertically_on_load(false);
 	}
 
 	template<typename T>

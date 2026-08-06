@@ -32,7 +32,9 @@ const static float2 INV_ATAN = float2(0.1591, 0.3183);
 
 float2 UvMapSphere(float3 v)
 {
-    float2 uv = float2(atan2(v.z, v.x), asin(v.y));
+    float3 dir = normalize(v);
+
+    float2 uv = float2(atan2(dir.z, dir.x), asin(dir.y));
     uv *= INV_ATAN;
     uv += 0.5;
     return uv;
@@ -89,6 +91,29 @@ float DistributionGGX(float NdotH, float roughness)
 
     // Normalized distribution
     return nom / denom;
+}
+
+float3 ImportanceSampleGGX(float2 Xi, float3 N, float roughness)
+{
+    float a = roughness * roughness;
+
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+
+    // From spherical coords to cartesian coords
+    float3 H;
+    H.x = cos(phi) * sinTheta;
+    H.y = sin(phi) * sinTheta;
+    H.z = cosTheta;
+
+    // From tangent-space vector to world-space sample vector
+    float3 up = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+    float3 tangent = normalize(cross(up, N));
+    float3 biTangent = cross(N, tangent);
+
+    float3 sampleVec = tangent * H.x + biTangent * H.y + N * H.z;
+    return normalize(sampleVec);
 }
 
 // Geometry Function (G) - Smith's method with Schlick-GGX approximation
