@@ -119,7 +119,7 @@ float4 main(VSOutput input) : SV_Target
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
 
-    float3 irradience = skybox.Sample(N).rgb * globals.scaleIBLAmbient;
+    float3 irradience = skybox.Sample(UvMapSphere(N)).rgb * globals.scaleIBLAmbient;
     float3 diffuse = irradience * baseColor.rgb;
 
     float3 ambient = (kD * diffuse) * ao;

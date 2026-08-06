@@ -10,11 +10,11 @@
 namespace Vulcan
 {
 	class Actor;
+	class HdrTexture;
 	class LightComponent;
 	class Material;
 	class MemoryBuffer;
 	class Mesh;
-	class Texture;
 	class World;
 
 	constexpr uint8 MAX_LIGHT_COUNT = 10;
@@ -56,7 +56,7 @@ namespace Vulcan
 		Actor* m_skyboxActor;
 		Mesh* m_skyboxMesh;
 		Material* m_skyboxMaterial;
-		Texture* m_skyboxTexture;
+		HdrTexture* m_skyboxTexture;
 
 	public:
 		explicit Lighting(World* world);

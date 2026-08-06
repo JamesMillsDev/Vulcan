@@ -1,5 +1,6 @@
 import global;
 import graphics;
+import lighting;
 
 struct PushConstants
 {
@@ -25,7 +26,7 @@ VSOutput main(VSInput input)
 [shader("fragment")]
 float4 main(VSOutput input) : SV_Target
 {
-    float3 color = skybox.Sample(input.worldLocation.xyz).rgb;
+    float3 color = skybox.Sample(UvMapSphere(input.worldLocation.xyz)).rgb;
 
     //color = color / (color + float3(1.0));
 

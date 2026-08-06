@@ -8,6 +8,9 @@
 #include <fstream>
 #include <vector>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "Utility/Config.h"
 
 using namespace Vulcan;
@@ -15,12 +18,7 @@ using namespace Vulcan;
 using std::ifstream;
 using std::vector;
 
-TMap<string, uint32> Resources::m_fileMappings;
-TMap<string, ResourceData> Resources::m_resources;
-string Resources::m_resourceDir;
-string Resources::m_resourceFileName;
-
-namespace 
+namespace
 {
 	vector<string> Split(const string& str, const string& delimiter)
 	{
@@ -52,7 +50,7 @@ namespace
 		{
 			str.replace(startPos, from.length(), to);
 
-			startPos += to.length(); 
+			startPos += to.length();
 		}
 	}
 
@@ -81,6 +79,36 @@ namespace
 			break;
 		}
 	}
+}
+
+TMap<string, uint32> Resources::m_fileMappings;
+TMap<string, ResourceData> Resources::m_resources;
+string Resources::m_resourceDir;
+string Resources::m_resourceFileName;
+ResourceIdQueue Resources::m_textureIdQueue;
+
+ResourceIdQueue::ResourceIdQueue()
+	: m_nextId{ 0 }
+{
+	
+}
+
+int32 ResourceIdQueue::Request()
+{
+	if (!m_freeIds.empty())
+	{
+		const int32 id = m_freeIds.front();
+		m_freeIds.pop();
+
+		return id;
+	}
+
+	return m_nextId++;
+}
+
+void ResourceIdQueue::Return(const int32 id)
+{
+	m_freeIds.push(id);
 }
 
 ResourceData& Resources::Find(string id)
@@ -126,6 +154,16 @@ ResourceData& Resources::Find(string id)
 	// Close the file and return the loaded data
 	resourceFile.close();
 	return m_resources[id];
+}
+
+int32 Resources::RequestNewTextureId()
+{
+	return m_textureIdQueue.Request();
+}
+
+void Resources::ReturnTextureId(const int32 id)
+{
+	m_textureIdQueue.Return(id);
 }
 
 void Resources::Init(Config* config)

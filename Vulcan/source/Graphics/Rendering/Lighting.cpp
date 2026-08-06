@@ -9,6 +9,7 @@
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 #include "Gameplay/Actors/Components/Rendering/MeshComponent.h"
 #include "Graphics/Renderer.h"
+#include "Graphics/Rendering/HdrTexture.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
 #include "Graphics/Rendering/Texture.h"
@@ -34,7 +35,7 @@ Lighting::Lighting(World* world) :
 	skyboxConfig.rasterizer.cullMode = VK_CULL_MODE_NONE;
 	m_skyboxMesh = Mesh::MakeCube();
 	m_skyboxMaterial = new Material{ skyboxConfig };
-	m_skyboxTexture = Texture::LoadCubeMapFromFile("Skyboxes/Default/", { "px", "nx", "py", "ny", "pz", "nz" });
+	m_skyboxTexture = HdrTexture::LoadFromFile("Textures\\T_DefaultSkybox");
 
 	m_skyboxActor = world->MakeActor<Actor>();
 	m_skyboxActor->MakeComponent<MeshComponent>(m_skyboxMesh, TList{ m_skyboxMaterial });

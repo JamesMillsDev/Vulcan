@@ -1,11 +1,13 @@
 #pragma once
 
+#include <queue>
 #include <string>
 
 #include "Maths/Alias.h"
 
 #include "Utility/Collections/TMap.h"
 
+using std::queue;
 using std::string;
 
 namespace Vulcan
@@ -16,6 +18,21 @@ namespace Vulcan
 	{
 		uint8* data;
 		int32 length;
+	};
+
+	class ResourceIdQueue
+	{
+	private:
+		int32 m_nextId;
+		queue<int32> m_freeIds;
+
+	public:
+		ResourceIdQueue();
+
+	public:
+		int32 Request();
+		void Return(int32 id);
+
 	};
 
 	/**
@@ -35,6 +52,7 @@ namespace Vulcan
 		static TMap<string, ResourceData> m_resources; /**< The loaded resource data. This prevents having to re-read the resource files. */
 		static string m_resourceDir; /**< The directory that any resource files are stored in. */
 		static string m_resourceFileName; /**< The name of any resource / resource mapping files. */
+		static ResourceIdQueue m_textureIdQueue; /**< the queue of texture resource ids. */
 
 	public:
 		/**
@@ -49,6 +67,9 @@ namespace Vulcan
 		 * @return The raw binary data of the resource.
 		 */
 		static ResourceData& Find(string id);
+
+		static int32 RequestNewTextureId();
+		static void ReturnTextureId(int32 id);
 
 	private:
 		static void Init(Config* config);

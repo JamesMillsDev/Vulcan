@@ -6,6 +6,7 @@
 #include "Gameplay/Actors/World.h"
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 #include "Gameplay/Actors/Components/Rendering/MeshComponent.h"
+#include "Graphics/Rendering/HdrTexture.h"
 #include "Graphics/Rendering/Lighting.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"

@@ -24,8 +24,19 @@ struct SceneLightingUniform
 };
 
 const static int MAX_LIGHT_COUNT = 10;
+const static float2 INV_ATAN = float2(0.1591, 0.3183);
+
 [[vk::binding(1, 0)]] ConstantBuffer<SceneLightingUniform> sceneLighting;
 [[vk::binding(2, 0)]] ConstantBuffer<LightUniform> lights[MAX_LIGHT_COUNT];
+[[vk::binding(3, 0)]] Sampler2D skybox;
+
+float2 UvMapSphere(float3 v)
+{
+    float2 uv = float2(atan2(v.z, v.x), asin(v.y));
+    uv *= INV_ATAN;
+    uv += 0.5;
+    return uv;
+}
 
 float3 LightDirection(int32_t index, float3 location)
 {
