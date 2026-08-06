@@ -1,0 +1,17 @@
+{
+    "About": {
+        "Name": "Template Game",
+        "Description": "",
+        "Version": [
+            1,
+            0,
+            0
+        ]
+    },
+    "Window": {
+        "Borderless": false,
+        "CanResize": true,
+        "Maximisable": true,
+        "Minimisable": true
+    }
+}

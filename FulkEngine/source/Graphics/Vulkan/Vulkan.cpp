@@ -434,8 +434,13 @@ VkCommandBuffer Vulkan::BeginFrame()
 
 	ImGui::NewFrame();
 	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-#endif
 
+	ImGui::BeginMainMenuBar();
+
+	ImGui::MenuItem("File");
+
+	ImGui::EndMainMenuBar();
+#endif
 
 	return cmdBuf;
 }
@@ -446,7 +451,6 @@ void Vulkan::EndFrame(const VkCommandBuffer cmdBuffer)
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
 #endif // _DEBUG
-
 
 	// End the rendering and transition the swap chain image
 	Try(

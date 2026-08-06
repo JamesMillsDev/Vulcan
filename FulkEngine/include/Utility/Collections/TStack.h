@@ -34,6 +34,8 @@ namespace Fulk
 
 		void Clear();
 
+		bool IsEmpty() const;
+
 	private:
 		void Expand();
 
@@ -130,6 +132,12 @@ namespace Fulk
 	void TStack<T, GROW_SIZE>::Clear()
 	{
 		m_top = -1;
+	}
+
+	template <typename T, uint32 GROW_SIZE>
+	bool TStack<T, GROW_SIZE>::IsEmpty() const
+	{
+		return m_top == -1;
 	}
 
 	template <typename T, uint32 GROW_SIZE>
