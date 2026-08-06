@@ -1,7 +1,7 @@
 
 # Vulcan
 
-A 3D Game Engine rendering using the Vulkan SDK. It is named after the roman god of Fire and Metalworking "Vulcan".
+A 3D Game Engine rendering using the Vulkan SDK. It is named after the Dwarvish word for Forge "Fulk".
 
 ## Acknowledgements
 
