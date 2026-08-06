@@ -8,10 +8,10 @@
 #include "Window.h"
 #include "Maths/Maths.h"
 
-using Vulcan::Maths;
-using Vulcan::SimpleInput;
-using Vulcan::EInputCodes;
-using Vulcan::GameTime;
+using Fulk::Maths;
+using Fulk::SimpleInput;
+using Fulk::EInputCodes;
+using Fulk::GameTime;
 
 FlyCamera::FlyCamera(const float fov, const float near, const float far)
 	: Camera{ fov, near, far }, location{ 0.f, 0.f, 0.f }, yaw{ 0 }, pitch{ 0 },

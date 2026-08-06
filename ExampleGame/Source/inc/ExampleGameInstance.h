@@ -2,7 +2,7 @@
 
 #include <Gameplay/GameInstance.h>
 
-namespace Vulcan
+namespace Fulk
 {
 	class Mesh;
 	class Material;
@@ -10,9 +10,9 @@ namespace Vulcan
 
 class FlyCamera;
 
-using Vulcan::GameInstance;
-using Vulcan::Mesh;
-using Vulcan::Material;
+using Fulk::GameInstance;
+using Fulk::Mesh;
+using Fulk::Material;
 
 class ExampleGameInstance final : public GameInstance
 {

@@ -3,5 +3,5 @@
 
 int main()
 {
-	return static_cast<int>(Vulcan::Application::Open<ExampleGameInstance>());
+	return static_cast<int>(Fulk::Application::Open<ExampleGameInstance>());
 }

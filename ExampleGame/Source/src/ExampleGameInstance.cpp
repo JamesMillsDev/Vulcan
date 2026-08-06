@@ -14,7 +14,7 @@
 #include "ImGui/imgui.h"
 #include "Maths/Maths.h"
 
-using namespace Vulcan;
+using namespace Fulk;
 
 constexpr int32 LIGHT_COUNT = 1;
 namespace

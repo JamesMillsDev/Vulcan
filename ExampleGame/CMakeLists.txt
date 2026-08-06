@@ -29,12 +29,7 @@ find_package(Vulkan REQUIRED)
 
 target_link_libraries(ExampleGame
         PUBLIC glm::glm
-        PUBLIC Vulcan
-)
-
-target_precompile_headers(ExampleGame PRIVATE
-        <string>
-        <vector>
+        PUBLIC FulkEngine
 )
 
 target_include_directories(ExampleGame

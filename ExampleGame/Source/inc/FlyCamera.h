@@ -10,8 +10,8 @@ using glm::vec2;
 using glm::vec3;
 using glm::mat4;
 
-using Vulcan::Camera;
-using Vulcan::GlobalsUniform;
+using Fulk::Camera;
+using Fulk::GlobalsUniform;
 
 class FlyCamera : public Camera
 {
