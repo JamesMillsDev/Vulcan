@@ -81,7 +81,7 @@ EExitCode Application::Run()
 	GameTime::Init();
 
 	// Initialise the application and game instance
-	Init();
+	Init(Renderer::m_instance->m_vulkan);
 	m_game->Init();
 
 	// Continue to loop until the window requests a close
@@ -136,7 +136,7 @@ EExitCode Application::Run()
 	return EExitCode::Success;
 }
 
-void Application::Init()
+void Application::Init(Vulkan* vulkan)
 {}
 
 void Application::PreRender()

@@ -30,6 +30,11 @@ bool Renderer::IsValid()
 	return m_instance != nullptr && Vulkan::IsLoaded();
 }
 
+VkCommandBuffer Renderer::CurrentCmdBuffer()
+{
+	return m_instance->m_frameCmdBuf;
+}
+
 Camera* Renderer::GetCurrentCamera()
 {
 	return m_currentCamera;

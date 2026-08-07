@@ -1,7 +1,6 @@
 #include "Graphics/Rendering/Material.h"
 
 #include <format>
-#include <ImGui/imgui.h>
 
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 #include "Graphics/Renderer.h"
@@ -59,37 +58,37 @@ void Material::SetTexture(const string& id, Texture* texture)
 }
 
 #if _DEBUG
-void Material::Dbg_ShowGui()
-{
-	if (!showDebugWindow)
-	{
-		return;
-	}
-
-	ImGui::PushID("Material");
-	ImGui::Begin("Material");
-
-	float colors[3] = { color.r, color.g, color.b };
-	if (ImGui::ColorEdit3("Color", colors))
-	{
-		color = Color{ colors[0], colors[1], colors[2], color.a };
-	}
-
-	colors[0] = emissiveTint.r;
-	colors[1] = emissiveTint.g;
-	colors[2] = emissiveTint.b;
-	if (ImGui::ColorEdit3("Emissive Color", colors))
-	{
-		emissiveTint = Color{ colors[0], colors[1], colors[2], emissiveTint.a };
-	}
-
-	ImGui::DragFloat("AO", &ao, .01f, 0.f, 1.f, "%.2f");
-	ImGui::DragFloat("Roughness", &roughness, .01f, 0.f, 1.f, "%.2f");
-	ImGui::DragFloat("Metallic", &metallic, .01f, 0.f, 1.f, "%.2f");
-
-	ImGui::End();
-	ImGui::PopID();
-}
+//void Material::Dbg_ShowGui()
+//{
+//	if (!showDebugWindow)
+//	{
+//		return;
+//	}
+//
+//	ImGui::PushID("Material");
+//	ImGui::Begin("Material");
+//
+//	float colors[3] = { color.r, color.g, color.b };
+//	if (ImGui::ColorEdit3("Color", colors))
+//	{
+//		color = Color{ colors[0], colors[1], colors[2], color.a };
+//	}
+//
+//	colors[0] = emissiveTint.r;
+//	colors[1] = emissiveTint.g;
+//	colors[2] = emissiveTint.b;
+//	if (ImGui::ColorEdit3("Emissive Color", colors))
+//	{
+//		emissiveTint = Color{ colors[0], colors[1], colors[2], emissiveTint.a };
+//	}
+//
+//	ImGui::DragFloat("AO", &ao, .01f, 0.f, 1.f, "%.2f");
+//	ImGui::DragFloat("Roughness", &roughness, .01f, 0.f, 1.f, "%.2f");
+//	ImGui::DragFloat("Metallic", &metallic, .01f, 0.f, 1.f, "%.2f");
+//
+//	ImGui::End();
+//	ImGui::PopID();
+//}
 #endif
 
 void Material::Bind(const VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo)

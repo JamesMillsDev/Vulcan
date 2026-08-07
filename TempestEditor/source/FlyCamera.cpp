@@ -8,10 +8,7 @@
 #include "Window.h"
 #include "Maths/Maths.h"
 
-using Tempest::Maths;
-using Tempest::SimpleInput;
-using Tempest::EInputCodes;
-using Tempest::GameTime;
+using namespace Tempest::Editor;
 
 FlyCamera::FlyCamera(const float fov, const float near, const float far)
 	: Camera{ fov, near, far }, location{ 0.f, 0.f, 0.f }, yaw{ 0 }, pitch{ 0 },

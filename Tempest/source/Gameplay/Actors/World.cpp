@@ -126,8 +126,6 @@ void World::PostRender(Actor* actor)
 	if (actor == nullptr)
 	{
 		actor = m_root;
-
-		m_lighting->Dbg_ShowGui();
 	}
 
 	if (actor != m_root)

@@ -41,6 +41,8 @@ namespace Tempest
 		static Renderer* Instance();
 		[[nodiscard]] static bool IsValid();
 
+		static VkCommandBuffer CurrentCmdBuffer();
+
 		static Camera* GetCurrentCamera();
 		static void SetCurrent(Camera* newCurrent);
 

@@ -31,9 +31,4 @@ void MeshComponent::Render()
 	Renderer::Instance()->Render(
 		m_mesh, m_materials, Owner()->GetTransform()->LocalToWorld(), Owner()->GetWorld()->GetLighting()
 	);
-
-	for (Material* material : m_materials)
-	{
-		material->Dbg_ShowGui();
-	}
 }

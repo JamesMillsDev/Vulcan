@@ -1,7 +1,6 @@
 #include "Graphics/Rendering/Lighting.h"
 
 #include <format>
-#include <ImGui/imgui.h>
 
 #include "Gameplay/Actors/Actor.h"
 #include "Gameplay/Actors/Transform.h"
@@ -110,71 +109,71 @@ void Lighting::UpdateBuffers()
 }
 
 #if _DEBUG
-void Lighting::Dbg_ShowGui()
-{
-	ImGui::Begin("Lighting");
-
-	ImGui::PushID("Ambient_Lighting");
-	if (ImGui::CollapsingHeader("Ambient"))
-	{
-		float colors[3] =
-		{
-			m_sceneLighting.ambientColor.r,
-			m_sceneLighting.ambientColor.g,
-			m_sceneLighting.ambientColor.b
-		};
-
-		if (ImGui::ColorEdit3("Color", colors))
-		{
-			m_sceneLighting.ambientColor = vec3{ colors[0], colors[1], colors[2] };
-		}
-
-		ImGui::SliderFloat("Strength", &m_sceneLighting.ambientStrength, 0.f, 1.f, "%.2f");
-		ImGui::SliderFloat("IBL Lighting Scale", &Renderer::Instance()->globalsUniform.scaleIblAmbient, .01f, 10.f, "%.2f");
-	}
-	ImGui::PopID();
-
-	ImGui::PushID("Scene_Lights");
-	if (ImGui::CollapsingHeader("Lights"))
-	{
-		for (uint8 i = 0; i < MAX_LIGHT_COUNT; ++i)
-		{
-			if (i < m_lights.Count())
-			{
-				LightComponent* light = m_lights[i];
-
-				string id = std::format("Light: {}", i + 1);
-				ImGui::PushID(id.c_str());
-				if (ImGui::CollapsingHeader(id.c_str()))
-				{
-					int itemIndex = static_cast<int>(light->type);
-					if (ImGui::Combo("Type", &itemIndex, LIGHT_NAMES.Data(), static_cast<int>(LIGHT_NAMES.Count())))
-					{
-						light->type = static_cast<LightComponent::EType>(itemIndex);
-					}
-
-					ImGui::DragFloat("Intensity", &light->intensity, 1.f, 0.f, FLT_MAX, "%.2f");
-
-					float colors[3] =
-					{
-						light->color.r,
-						light->color.g,
-						light->color.b
-					};
-
-					if (ImGui::ColorEdit3("Color", colors))
-					{
-						light->color = vec3{ colors[0], colors[1], colors[2] };
-					}
-				}
-				ImGui::PopID();
-			}
-		}
-	}
-	ImGui::PopID();
-
-	ImGui::End();
-}
+//void Lighting::Dbg_ShowGui()
+//{
+//	ImGui::Begin("Lighting");
+//
+//	ImGui::PushID("Ambient_Lighting");
+//	if (ImGui::CollapsingHeader("Ambient"))
+//	{
+//		float colors[3] =
+//		{
+//			m_sceneLighting.ambientColor.r,
+//			m_sceneLighting.ambientColor.g,
+//			m_sceneLighting.ambientColor.b
+//		};
+//
+//		if (ImGui::ColorEdit3("Color", colors))
+//		{
+//			m_sceneLighting.ambientColor = vec3{ colors[0], colors[1], colors[2] };
+//		}
+//
+//		ImGui::SliderFloat("Strength", &m_sceneLighting.ambientStrength, 0.f, 1.f, "%.2f");
+//		ImGui::SliderFloat("IBL Lighting Scale", &Renderer::Instance()->globalsUniform.scaleIblAmbient, .01f, 10.f, "%.2f");
+//	}
+//	ImGui::PopID();
+//
+//	ImGui::PushID("Scene_Lights");
+//	if (ImGui::CollapsingHeader("Lights"))
+//	{
+//		for (uint8 i = 0; i < MAX_LIGHT_COUNT; ++i)
+//		{
+//			if (i < m_lights.Count())
+//			{
+//				LightComponent* light = m_lights[i];
+//
+//				string id = std::format("Light: {}", i + 1);
+//				ImGui::PushID(id.c_str());
+//				if (ImGui::CollapsingHeader(id.c_str()))
+//				{
+//					int itemIndex = static_cast<int>(light->type);
+//					if (ImGui::Combo("Type", &itemIndex, LIGHT_NAMES.Data(), static_cast<int>(LIGHT_NAMES.Count())))
+//					{
+//						light->type = static_cast<LightComponent::EType>(itemIndex);
+//					}
+//
+//					ImGui::DragFloat("Intensity", &light->intensity, 1.f, 0.f, FLT_MAX, "%.2f");
+//
+//					float colors[3] =
+//					{
+//						light->color.r,
+//						light->color.g,
+//						light->color.b
+//					};
+//
+//					if (ImGui::ColorEdit3("Color", colors))
+//					{
+//						light->color = vec3{ colors[0], colors[1], colors[2] };
+//					}
+//				}
+//				ImGui::PopID();
+//			}
+//		}
+//	}
+//	ImGui::PopID();
+//
+//	ImGui::End();
+//}
 #endif // _DEBUG
 
 void Lighting::AddLight(LightComponent* light)

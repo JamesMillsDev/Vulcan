@@ -14,7 +14,7 @@ using std::vector;
 
 using MenuOperation = std::function<void()>;
 
-namespace Tempest
+namespace Tempest::Editor
 {
 	class Menu
 	{

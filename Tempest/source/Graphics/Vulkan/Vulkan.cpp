@@ -7,13 +7,8 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_impl_glfw.h>
-#include <ImGui/imgui_impl_vulkan.h>
-
 #include "Application.h"
 #include "Window.h"
-#include "Editor/Menu.h"
 
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 
@@ -69,6 +64,16 @@ const VmaAllocator& Vulkan::Allocator()
 const VmaAllocator& Vulkan::GetAllocator() const
 {
 	return m_vmaAllocator;
+}
+
+const VulkanInstance* Vulkan::GetInstance() const
+{
+	return m_vkInstance;
+}
+
+const SwapChain* Vulkan::GetSwapChain() const
+{
+	return m_swapChain;
 }
 
 const CommandManager* Vulkan::CmdManager()
@@ -274,117 +279,6 @@ void Vulkan::Init(Config* config, GLFWwindow* window)
 			}
 		);
 
-	#if _DEBUG
-		// ImGui
-		InitAndPushResource(
-			[this, window]
-			{
-				TArray poolSizes
-				{
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-					VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
-				};
-
-				VkDescriptorPoolCreateInfo poolInfo
-				{
-					.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-					.pNext = nullptr,
-					.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-					.maxSets = 1000,
-					.poolSizeCount = poolSizes.Count(),
-					.pPoolSizes = poolSizes.Data()
-				};
-
-				Try(
-					vkCreateDescriptorPool(m_device->Logical(), &poolInfo, nullptr, &m_imguiPool),
-					"Failed to create ImGui Descriptor Pool!"
-				);
-
-				ImGui::CreateContext();
-				ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-				ImGui_ImplGlfw_InitForVulkan(window, true);
-
-				ImGui_ImplVulkan_InitInfo initInfo{};
-				initInfo.Instance = m_vkInstance->Get();
-				initInfo.PhysicalDevice = m_device->Physical();
-				initInfo.Device = m_device->Logical();
-				initInfo.Queue = m_device->Queue();
-				initInfo.DescriptorPool = m_imguiPool;
-				initInfo.MinImageCount = 3;
-				initInfo.ImageCount = 3;
-				initInfo.UseDynamicRendering = true;
-
-				ImGui_ImplVulkan_PipelineInfo pipelineInfo{};
-				pipelineInfo.PipelineRenderingCreateInfo =
-				{
-					.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-					.pNext = nullptr,
-					.viewMask = VK_FORMAT_UNDEFINED,
-					.colorAttachmentCount = 1,
-					.pColorAttachmentFormats = &m_swapChain->m_format,
-					.depthAttachmentFormat = GetDepthFormat(),
-					.stencilAttachmentFormat = VK_FORMAT_UNDEFINED
-				};
-				pipelineInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-
-				initInfo.PipelineInfoMain = pipelineInfo;
-
-				ImGui_ImplVulkan_Init(&initInfo);
-			},
-			[this]
-			{
-				ImGui_ImplVulkan_Shutdown();
-				vkDestroyDescriptorPool(m_device->Logical(), m_imguiPool, nullptr);
-				ImGui_ImplGlfw_Shutdown();
-
-				ImGui::DestroyContext();
-			}
-		);
-	#endif
-
-		InitAndPushResource(
-			[this]
-			{
-				MenuBuilder builder;
-				builder
-				.SubMenu("File")
-					.SubMenu("New")
-						.Item("Project", []{})
-						.Item("Scene", []{})
-					.End()
-					.Item("Open", []{})
-					.Separator()
-					.Item("Save", []{})
-					.Item("Save As...", []{})
-					.Separator()
-					.Item("Close", []{ Application::Quit(); })
-				.End()
-				.SubMenu("Edit")
-					.Item("Undo", []{})
-					.Item("Redo", []{})
-				.End()
-				.SubMenu("Help")
-					.Item("About...", []{})
-				.End();
-
-				m_mainMenu = builder.Build();
-			},
-			[this]
-			{
-				delete m_mainMenu;
-			}
-		);
-
 		// Set the resize callback
 		glfwSetWindowSizeCallback(window, [](GLFWwindow* _, const int w, const int h)
 			{
@@ -461,26 +355,11 @@ VkCommandBuffer Vulkan::BeginFrame()
 	m_swapChain->TransitionFrameImages(cmdBuf, m_imageIndex);
 	m_swapChain->BeginFrameRender(cmdBuf, m_imageIndex, m_clearColor);
 
-#if IS_EDITOR
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-
-	ImGui::NewFrame();
-	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-
-	m_mainMenu->Render();
-#endif
-
 	return cmdBuf;
 }
 
 void Vulkan::EndFrame(const VkCommandBuffer cmdBuffer)
 {
-#if _DEBUG
-	ImGui::Render();
-	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
-#endif // _DEBUG
-
 	// End the rendering and transition the swap chain image
 	Try(
 		m_swapChain->EndFrameRender(cmdBuffer, m_imageIndex),

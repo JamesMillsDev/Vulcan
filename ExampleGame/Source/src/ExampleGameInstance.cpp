@@ -1,6 +1,5 @@
 #include "ExampleGameInstance.h"
 
-#include "FlyCamera.h"
 #include "GameTime.h"
 #include "Gameplay/Actors/Transform.h"
 #include "Gameplay/Actors/World.h"
@@ -25,15 +24,12 @@ namespace
 }
 constexpr float ANGLE_STEP = 360.f / LIGHT_COUNT;
 
-ExampleGameInstance::ExampleGameInstance() :
-	m_camera{nullptr}, m_material{nullptr}, m_mesh{nullptr}, m_cubeMesh{nullptr} {}
+ExampleGameInstance::ExampleGameInstance()
+	:m_material{ nullptr }, m_mesh{ nullptr }, m_cubeMesh{ nullptr }
+{}
 
 void ExampleGameInstance::Init()
 {
-	m_camera = new FlyCamera{ 45.f, .1f, 100.f };
-	m_camera->location = vec3{ 0.f, 2.f, 10.f };
-	m_camera->yaw = 180.f;
-
 	m_mesh = Mesh::MakeFromAssimp("Meshes/shaderBall.fbx");
 
 	m_material = new Material{ "Shaders/pbr" };
@@ -73,24 +69,21 @@ void ExampleGameInstance::Shutdown()
 	}
 
 	delete m_material;
-	delete m_camera;
 	delete m_cubeMesh;
 	delete m_mesh;
 }
 
 void ExampleGameInstance::Tick()
 {
-	m_camera->Tick();
-
 	float offset = 0;
 	for (Actor* light : lights)
 	{
 		rotationMatrix = glm::rotate(mat4{ 1.f }, GameTime::Time(), vec3{ 0.f, 1.f, 0.f });
 		rotationMatrix = glm::rotate(rotationMatrix, Maths::Radians(offset), vec3{ 0.f, 1.f, 0.f });
-	
+
 		offset += ANGLE_STEP;
 		vec3 forward = rotationMatrix * vec4{ 0.f, 0.f, 1.f, 0.f };
-	
+
 		light->GetTransform()->SetLocation(forward * 15.f + vec3{ 0.f, 2.5f, 0.f });
 	}
 }

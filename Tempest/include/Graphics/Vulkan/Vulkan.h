@@ -15,7 +15,6 @@ using CleanupFunction = std::function<void()>;
 namespace Tempest
 {
 	class Config;
-	class Menu;
 	class ResourceStack;
 
 	class Vulkan  // NOLINT(cppcoreguidelines-special-member-functions)
@@ -61,10 +60,6 @@ namespace Tempest
 		uint32 m_frameIndex;
 		uint32 m_imageIndex;
 
-		VkDescriptorPool m_imguiPool;
-
-		Menu* m_mainMenu;
-
 	private:
 		explicit Vulkan(Config* config, GLFWwindow* window);
 		~Vulkan();
@@ -75,6 +70,8 @@ namespace Tempest
 		[[nodiscard]] const GraphicsDevice* GetDevice() const;
 		[[nodiscard]] const CommandManager* GetCmdManager() const;
 		[[nodiscard]] const VmaAllocator& GetAllocator() const;
+		[[nodiscard]] const VulkanInstance* GetInstance() const;
+		[[nodiscard]] const SwapChain* GetSwapChain() const;
 
 	private:
 		void Init(Config* config, GLFWwindow* window);

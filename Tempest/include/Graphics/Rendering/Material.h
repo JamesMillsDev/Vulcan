@@ -4,7 +4,6 @@
 #include <glm/mat4x4.hpp>
 #include <vulkan/vulkan.h>
 
-#include "Debug.h"
 #include "Object.h"
 
 #include "Graphics/Vulkan/GraphicsPipeline.h"
@@ -94,8 +93,6 @@ namespace Tempest
 		[[nodiscard]] uint64 GetHashCode() const override;
 
 		void SetTexture(const string& id, Texture* texture);
-
-		DEFINE_DEBUG_FUNCTION(ShowGui)
 
 	private:
 		void Bind(VkCommandBuffer cmdBuffer, const MaterialBindInfo& bindInfo);

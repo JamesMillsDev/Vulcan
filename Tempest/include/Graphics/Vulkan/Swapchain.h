@@ -38,6 +38,9 @@ namespace Tempest
 		SwapChain(const Window* window, GraphicsDevice* device, const VkInstance& instance, const VmaAllocator& allocator, const VkFormat& initialDepthFormat);
 		~SwapChain();
 
+	public:
+		const VkFormat& GetFormat() const;
+
 	private:
 		void Create(const Window* window, const VkFormat& initialDepthFormat);
 		void Recreate(const Window* window, const VkFormat& depthFormat);

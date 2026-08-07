@@ -65,7 +65,7 @@ namespace Tempest
 	public:
 		void UpdateBuffers();
 
-		DEFINE_DEBUG_FUNCTION(ShowGui)
+		//DEFINE_DEBUG_FUNCTION(ShowGui)
 
 		void AddLight(LightComponent* light);
 		void RemoveLight(LightComponent* light);

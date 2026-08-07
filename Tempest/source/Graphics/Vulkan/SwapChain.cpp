@@ -31,6 +31,11 @@ SwapChain::~SwapChain()
 	vkDestroySurfaceKHR(m_vkInstance, m_surface, nullptr);
 }
 
+const VkFormat& SwapChain::GetFormat() const
+{
+	return m_format;
+}
+
 void SwapChain::Create(const Window* window, const VkFormat& initialDepthFormat)
 {
 	Try(

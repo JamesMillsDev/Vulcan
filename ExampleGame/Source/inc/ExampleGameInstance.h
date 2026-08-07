@@ -8,8 +8,6 @@ namespace Tempest
 	class Material;
 }
 
-class FlyCamera;
-
 using Tempest::GameInstance;
 using Tempest::Mesh;
 using Tempest::Material;
@@ -17,8 +15,6 @@ using Tempest::Material;
 class ExampleGameInstance final : public GameInstance
 {
 private:
-	FlyCamera* m_camera;
-
 	Material* m_material;
 	Mesh* m_mesh;
 	Mesh* m_cubeMesh;

@@ -24,6 +24,7 @@ set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "Build shared libraries" FORCE)
 FetchContent_MakeAvailable(glm)
 FetchContent_MakeAvailable(ktx)
 
+find_package(Python REQUIRED COMPONENTS Interpreter)
 find_package(Vulkan REQUIRED)
 
 target_link_libraries(TempestEditor
@@ -32,6 +33,14 @@ target_link_libraries(TempestEditor
 )
 
 target_include_directories(TempestEditor
-        PUBLIC Source/inc
+        PUBLIC include
         PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_custom_command(
+    TARGET TempestEditor
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Running post-build script..."
+    COMMAND Python::Interpreter ${CMAKE_SOURCE_DIR}/BuildScripts/PostBuild.py $<TARGET_FILE_DIR:TempestEditor>
+    VERBATIM
 )

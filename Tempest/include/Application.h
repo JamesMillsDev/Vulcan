@@ -18,6 +18,7 @@ namespace Tempest
 {
 	class Config;
 	class Renderer;
+	class Vulkan;
 
 	enum class EExitCode : uint8_t
 	{
@@ -83,7 +84,7 @@ namespace Tempest
 
 	protected:
 		Application();
-		~Application();
+		virtual ~Application();
 
 	protected:
 		/**
@@ -92,7 +93,7 @@ namespace Tempest
 		 */
 		[[nodiscard]] EExitCode Run();
 
-		virtual void Init();
+		virtual void Init(Vulkan* vulkan);
 
 		virtual void PreRender();
 

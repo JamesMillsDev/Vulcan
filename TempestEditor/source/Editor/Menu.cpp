@@ -4,7 +4,7 @@
 
 #include "ImGui/imgui.h"
 
-using namespace Tempest;
+using namespace Tempest::Editor;
 
 Menu::Menu(string title)
 	: m_label{ std::move(title) }, m_isRoot{ false }, m_isSeparator{ false }
