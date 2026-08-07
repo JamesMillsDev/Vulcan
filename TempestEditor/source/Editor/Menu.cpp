@@ -1,8 +1,7 @@
 #include "Editor/Menu.h"
 
+#include <imgui.h>
 #include <iostream>
-
-#include "ImGui/imgui.h"
 
 using namespace Tempest::Editor;
 

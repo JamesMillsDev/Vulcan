@@ -1,9 +1,8 @@
 #pragma once
 
 #include <Application.h>
+#include <imgui.h>
 #include <vulkan/vulkan_core.h>
-
-#include "ImGui/imgui.h"
 
 namespace Tempest::Editor
 {

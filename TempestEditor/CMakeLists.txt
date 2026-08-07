@@ -12,17 +12,11 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/g-truc/glm.git
         GIT_TAG 1.0.3
 )
-FetchContent_Declare(
-        ktx
-        GIT_REPOSITORY https://github.com/KhronosGroup/KTX-Software.git
-        GIT_TAG v4.4.2
-)
 
 SET(GLM_TEST_ENABLE OFF CACHE BOOL "GLM Build unit tests")
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "Build shared libraries" FORCE)
 
 FetchContent_MakeAvailable(glm)
-FetchContent_MakeAvailable(ktx)
 
 find_package(Python REQUIRED COMPONENTS Interpreter)
 find_package(Vulkan REQUIRED)
@@ -30,6 +24,7 @@ find_package(Vulkan REQUIRED)
 target_link_libraries(TempestEditor
         PUBLIC glm::glm
         PUBLIC Tempest
+        PUBLIC ImGui
 )
 
 target_include_directories(TempestEditor

@@ -19,5 +19,6 @@ if (GENERATE_EXAMPLE)
 endif()
 
 if(EDITOR_MODE)
+    add_subdirectory(ImGui)
     add_subdirectory(TempestEditor)
 endif()

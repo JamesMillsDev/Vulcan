@@ -1,9 +1,9 @@
 #include "EditorApplication.h"
 
 #include <glm/vec3.hpp>
-#include <ImGui/imgui_internal.h>
-#include <ImGui/imgui_impl_glfw.h>
-#include <ImGui/imgui_impl_vulkan.h>
+#include <imgui_internal.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 #include "EditorGameInstance.h"
 #include "FlyCamera.h"
