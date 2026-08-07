@@ -7,6 +7,10 @@ file(
 include(FetchContent)
 add_library(Tempest STATIC ${SOURCES})
 
+if (EDITOR_MODE)
+    add_compile_definitions(IS_EDITOR=1)
+endif()
+
 FetchContent_Declare(
         glm
         GIT_REPOSITORY https://github.com/g-truc/glm.git

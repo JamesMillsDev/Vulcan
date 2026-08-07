@@ -13,10 +13,10 @@
 
 #include "Application.h"
 #include "Window.h"
+#include "Editor/Menu.h"
 
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 
-#include "Graphics/Rendering/Texture.h"
 #include "Graphics/Vulkan/CommandManager.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/Swapchain.h"
@@ -352,6 +352,39 @@ void Vulkan::Init(Config* config, GLFWwindow* window)
 		);
 	#endif
 
+		InitAndPushResource(
+			[this]
+			{
+				MenuBuilder builder;
+				builder
+				.SubMenu("File")
+					.SubMenu("New")
+						.Item("Project", []{})
+						.Item("Scene", []{})
+					.End()
+					.Item("Open", []{})
+					.Separator()
+					.Item("Save", []{})
+					.Item("Save As...", []{})
+					.Separator()
+					.Item("Close", []{ Application::Quit(); })
+				.End()
+				.SubMenu("Edit")
+					.Item("Undo", []{})
+					.Item("Redo", []{})
+				.End()
+				.SubMenu("Help")
+					.Item("About...", []{})
+				.End();
+
+				m_mainMenu = builder.Build();
+			},
+			[this]
+			{
+				delete m_mainMenu;
+			}
+		);
+
 		// Set the resize callback
 		glfwSetWindowSizeCallback(window, [](GLFWwindow* _, const int w, const int h)
 			{
@@ -428,18 +461,14 @@ VkCommandBuffer Vulkan::BeginFrame()
 	m_swapChain->TransitionFrameImages(cmdBuf, m_imageIndex);
 	m_swapChain->BeginFrameRender(cmdBuf, m_imageIndex, m_clearColor);
 
-#if _DEBUG
+#if IS_EDITOR
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 
 	ImGui::NewFrame();
 	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-	ImGui::BeginMainMenuBar();
-
-	ImGui::MenuItem("File");
-
-	ImGui::EndMainMenuBar();
+	m_mainMenu->Render();
 #endif
 
 	return cmdBuf;

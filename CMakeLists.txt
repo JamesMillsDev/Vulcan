@@ -9,10 +9,15 @@ if (MSVC)
 endif()
 
 option(GENERATE_EXAMPLE "Generate an example 3D project with a PBR material sphere." OFF)
+option(EDITOR_MODE "Run the editor rather than a build of the game." OFF)
 add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
 add_subdirectory(Tempest)
 
 if (GENERATE_EXAMPLE)
     add_subdirectory(ExampleGame)
+endif()
+
+if(EDITOR_MODE)
+    add_subdirectory(TempestEditor)
 endif()

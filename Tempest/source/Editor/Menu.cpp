@@ -2,35 +2,70 @@
 
 #include <iostream>
 
+#include "ImGui/imgui.h"
+
 using namespace Tempest;
 
-Menu::Menu() = default;
-
-Menu::Menu(const string& title)
-	: m_label{ title }
+Menu::Menu(string title)
+	: m_label{ std::move(title) }, m_isRoot{ false }, m_isSeparator{ false }
 {
 
 }
 
-Menu::Menu(const string& label, const MenuOperation& operation)
-	: m_label{ label }, m_operation{ operation }
+Menu::Menu(string label, MenuOperation operation)
+	: m_label{ std::move(label) }, m_operation{ std::move(operation) }, m_isRoot{ false }, m_isSeparator{ false }
 {}
 
 Menu::~Menu()
 {
-	for (auto& child : m_children)
+	for (const Menu* child : m_children)
 	{
 		delete child;
 	}
 }
 
-void Menu::Render()
+Menu::Menu()
+	: m_isRoot{ true }, m_isSeparator{ false }
+{}
+
+void Menu::Render() const
 {
-	std::cout << m_label << "\n";
-	for (auto& child : m_children)
+	if (m_isRoot)
 	{
-		std::cout << "\t";
-		child->Render();
+		ImGui::BeginMainMenuBar();
+
+		for (const Menu* menu : m_children)
+		{
+			menu->Render();
+		}
+
+		ImGui::EndMainMenuBar();
+	}
+	// This is a leaf node
+	else if (m_children.empty())
+	{
+		if (m_isSeparator)
+		{
+			ImGui::Separator();
+		}
+		else
+		{
+			ImGui::PushID(m_label.c_str());
+			if (ImGui::MenuItem(m_label.c_str()))
+			{
+				m_operation();
+			}
+			ImGui::PopID();
+		}
+	}
+	else if (ImGui::BeginMenu(m_label.c_str()))
+	{
+		for (const Menu* menu : m_children)
+		{
+			menu->Render();
+		}
+
+		ImGui::EndMenu();
 	}
 }
 
@@ -43,7 +78,10 @@ Menu* MenuBuilder::GenerateFrom(const MenuItemInformation& info)
 {
 	if (info.children.empty())
 	{
-		return new Menu{ info.name, info.operation };
+		Menu* menu = new Menu{ info.name, info.operation };
+		menu->m_isSeparator = info.isSeparator;
+
+		return menu;
 	}
 
 	Menu* menu = new Menu{ info.name };
@@ -55,7 +93,7 @@ Menu* MenuBuilder::GenerateFrom(const MenuItemInformation& info)
 	return menu;
 }
 
-Menu* MenuBuilder::Build()
+Menu* MenuBuilder::Build() const
 {
 	Menu* menu = new Menu;
 	for (auto& item : m_topLevelInfo)
@@ -82,7 +120,8 @@ MenuBuilder& MenuBuilder::Item(const string& label, const MenuOperation& operati
 	MenuItemInformation info
 	{
 		.name = label,
-		.operation = operation
+		.operation = operation,
+		.isSeparator = false
 	};
 
 	m_informationStack.top().children.emplace_back(info);
@@ -91,7 +130,7 @@ MenuBuilder& MenuBuilder::Item(const string& label, const MenuOperation& operati
 
 MenuBuilder& MenuBuilder::Separator()
 {
-	m_informationStack.top().children.emplace_back("-----");
+	m_informationStack.top().children.emplace_back(MenuItemInformation{ .name = "-----", .isSeparator = true });
 	return *this;
 }
 

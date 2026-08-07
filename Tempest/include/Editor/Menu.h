@@ -18,20 +18,26 @@ namespace Tempest
 {
 	class Menu
 	{
+		friend class MenuBuilder;
+
 	private:
 		string m_label;
 		MenuOperation m_operation;
 		vector<Menu*> m_children;
+		bool m_isRoot;
+		bool m_isSeparator;
 
 	public:
-		Menu();
-		explicit Menu(const string& title);
-		explicit Menu(const string& label, const MenuOperation& operation);
+		explicit Menu(string title);
+		explicit Menu(string label, MenuOperation operation);
 
 		~Menu();
 
+	private:
+		Menu();
+
 	public:
-		void Render();
+		void Render() const;
 
 		void AddChild(Menu* child);
 
@@ -45,6 +51,7 @@ namespace Tempest
 			string name;
 			MenuOperation operation = nullptr;
 			vector<MenuItemInformation> children = {};
+			bool isSeparator = false;
 		};
 
 	private:
@@ -55,7 +62,7 @@ namespace Tempest
 		vector<MenuItemInformation> m_topLevelInfo;
 
 	public:
-		Menu* Build();
+		Menu* Build() const;
 
 		MenuBuilder& SubMenu(const string& title);
 		MenuBuilder& Item(const string& label, const MenuOperation& operation);

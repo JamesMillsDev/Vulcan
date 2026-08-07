@@ -53,7 +53,7 @@ Application::~Application()
 	m_config = nullptr;
 }
 
-EExitCode Application::Run() const
+EExitCode Application::Run()
 {
 	// Attempt to open the window, returning fail code if it does not succeed
 	try
@@ -80,7 +80,8 @@ EExitCode Application::Run() const
 	Resources::Init(m_config);
 	GameTime::Init();
 
-	// Initialise the game instance
+	// Initialise the application and game instance
+	Init();
 	m_game->Init();
 
 	// Continue to loop until the window requests a close
@@ -91,11 +92,21 @@ EExitCode Application::Run() const
 		SimpleInput::Instance()->ClearStatus();
 		glfwPollEvents();
 
+		// Tick the application
+		Tick();
+
+		// Tick the game and world
 		m_game->Tick();
 		m_game->GetWorld()->Tick();
 
 		Renderer::Instance()->BeginFrame();
 
+		// Render the application
+		PreRender();
+		Render();
+		PostRender();
+
+		// Render the game and world
 		m_game->Render();
 		m_game->GetWorld()->PreRender();
 		m_game->GetWorld()->Render();
@@ -109,9 +120,12 @@ EExitCode Application::Run() const
 	// delete the current world to pre-cleanup
 	delete m_game->m_world;
 
-	// Shutdown the game instance and close the window
+	// Shutdown the game instance and application
 	m_game->Shutdown();
 
+	Shutdown();
+
+	// Shutdown all the subsystems and close the window
 	SimpleInput::Destroy();
 	Resources::Shutdown();
 	Renderer::Destroy();
@@ -121,3 +135,21 @@ EExitCode Application::Run() const
 	// Return success as the whole gameplay loop ran successfully.
 	return EExitCode::Success;
 }
+
+void Application::Init()
+{}
+
+void Application::PreRender()
+{}
+
+void Application::Render()
+{}
+
+void Application::PostRender()
+{}
+
+void Application::Tick()
+{}
+
+void Application::Shutdown()
+{}

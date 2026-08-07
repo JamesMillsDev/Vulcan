@@ -28,7 +28,7 @@ namespace Tempest
 
 	class Application
 	{
-	private:
+	protected:
 		/** @brief The singleton Application instance. nullptr when no app is running. */
 		static Application* m_instance;
 
@@ -71,7 +71,7 @@ namespace Tempest
 		/** @brief Returns the pointer to the window instance. */
 		static Window* GetWindow();
 
-	private:
+	protected:
 		/** @brief The global engine config for this application. */
 		Config* m_config;
 
@@ -81,16 +81,28 @@ namespace Tempest
 		/** @brief The active game instance managed by this application. */
 		GameInstance* m_game;
 
-	private:
+	protected:
 		Application();
 		~Application();
 
-	private:
+	protected:
 		/**
 		 * @brief Executes the main game loop until the game signals an exit.
 		 * @return The exit code indicating why the loop terminated.
 		 */
-		[[nodiscard]] EExitCode Run() const;
+		[[nodiscard]] EExitCode Run();
+
+		virtual void Init();
+
+		virtual void PreRender();
+
+		virtual void Render();
+
+		virtual void PostRender();
+
+		virtual void Tick();
+
+		virtual void Shutdown();
 
 	};
 
