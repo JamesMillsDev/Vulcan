@@ -2,7 +2,7 @@
 
 #include <Gameplay/GameInstance.h>
 
-namespace Fulk
+namespace Tempest
 {
 	class Mesh;
 	class Material;
@@ -10,9 +10,9 @@ namespace Fulk
 
 class FlyCamera;
 
-using Fulk::GameInstance;
-using Fulk::Mesh;
-using Fulk::Material;
+using Tempest::GameInstance;
+using Tempest::Mesh;
+using Tempest::Material;
 
 class ExampleGameInstance final : public GameInstance
 {

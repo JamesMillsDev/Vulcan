@@ -29,7 +29,7 @@ find_package(Vulkan REQUIRED)
 
 target_link_libraries(ExampleGame
         PUBLIC glm::glm
-        PUBLIC FulkEngine
+        PUBLIC Tempest
 )
 
 target_include_directories(ExampleGame

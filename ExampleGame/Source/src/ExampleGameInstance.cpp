@@ -14,7 +14,7 @@
 #include "ImGui/imgui.h"
 #include "Maths/Maths.h"
 
-using namespace Fulk;
+using namespace Tempest;
 
 constexpr int32 LIGHT_COUNT = 1;
 namespace
