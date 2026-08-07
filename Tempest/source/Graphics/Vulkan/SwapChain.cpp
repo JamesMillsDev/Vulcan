@@ -36,6 +36,16 @@ const VkFormat& SwapChain::GetFormat() const
 	return m_format;
 }
 
+void SwapChain::UpdateViewport(const VkViewport& vp) const
+{
+	vkCmdSetViewport(m_currentCmdBuffer, 0, 1, &vp);
+}
+
+void SwapChain::UpdateScissor(const VkRect2D scissor) const
+{
+	vkCmdSetScissor(m_currentCmdBuffer, 0, 1, &scissor);
+}
+
 void SwapChain::Create(const Window* window, const VkFormat& initialDepthFormat)
 {
 	Try(
@@ -361,6 +371,8 @@ void SwapChain::TransitionFrameImages(const VkCommandBuffer cmdBuffer, const uin
 
 void SwapChain::BeginFrameRender(const VkCommandBuffer cmdBuffer, const uint32 imgIndex, const Color& clrColor)
 {
+	m_currentCmdBuffer = cmdBuffer;
+
 	// Begin rendering
 	VkRenderingAttachmentInfo colorAttachmentInfo{};
 	colorAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -412,6 +424,8 @@ void SwapChain::BeginFrameRender(const VkCommandBuffer cmdBuffer, const uint32 i
 
 VkResult SwapChain::EndFrameRender(const VkCommandBuffer cmdBuffer, const uint32 imgIndex)
 {
+	m_currentCmdBuffer = VK_NULL_HANDLE;
+
 	// End the rendering and transition the swap chain image
 	vkCmdEndRendering(cmdBuffer);
 

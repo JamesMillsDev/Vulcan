@@ -33,6 +33,7 @@ namespace Tempest
 		VkSurfaceKHR m_surface;
 
 		VkFormat m_format;
+		VkCommandBuffer m_currentCmdBuffer;
 
 	private:
 		SwapChain(const Window* window, GraphicsDevice* device, const VkInstance& instance, const VmaAllocator& allocator, const VkFormat& initialDepthFormat);
@@ -40,6 +41,9 @@ namespace Tempest
 
 	public:
 		const VkFormat& GetFormat() const;
+
+		void UpdateViewport(const VkViewport& vp) const;
+		void UpdateScissor(VkRect2D scissor) const;
 
 	private:
 		void Create(const Window* window, const VkFormat& initialDepthFormat);

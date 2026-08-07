@@ -3,6 +3,8 @@
 #include <Application.h>
 #include <vulkan/vulkan_core.h>
 
+#include "ImGui/imgui.h"
+
 namespace Tempest::Editor
 {
 	class FlyCamera;
@@ -18,16 +20,17 @@ namespace Tempest::Editor
 		Menu* m_mainMenu;
 
 		VkDescriptorPool m_imguiPool;
+		ImGuiID m_dockSpaceId;
 
 	private:
 		EditorApplication();
 
 	protected:
 		void Init(Vulkan* vulkan) override;
+		void Tick() override;
 		void PreRender() override;
 		void Render() override;
 		void PostRender() override;
-		void Tick() override;
 		void Shutdown() override;
 
 	private:

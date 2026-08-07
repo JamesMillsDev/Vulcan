@@ -1,22 +1,30 @@
 #include "EditorApplication.h"
 
+#include <glm/vec3.hpp>
+#include <ImGui/imgui_internal.h>
+#include <ImGui/imgui_impl_glfw.h>
+#include <ImGui/imgui_impl_vulkan.h>
+
 #include "EditorGameInstance.h"
 #include "FlyCamera.h"
+#include "GameTime.h"
 #include "Editor/Menu.h"
-#include "glm/vec3.hpp"
+#include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 #include "Graphics/Renderer.h"
+#include "Graphics/Rendering/Material.h"
+#include "Graphics/Rendering/Mesh.h"
+#include "Graphics/Rendering/Texture.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/Swapchain.h"
 #include "Graphics/Vulkan/Vulkan.h"
 #include "Graphics/Vulkan/VulkanInstance.h"
-#include "ImGui/imgui_impl_glfw.h"
-#include "ImGui/imgui_impl_vulkan.h"
 
 using glm::vec3;
 
+using namespace Tempest;
 using namespace Tempest::Editor;
 
-Tempest::EExitCode EditorApplication::Open()
+EExitCode EditorApplication::Open()
 {
 	// Validate that the open function has not already been called
 	assert(m_instance == nullptr && "Cannot create a second instance of application!");
@@ -41,7 +49,7 @@ Tempest::EExitCode EditorApplication::Open()
 }
 
 EditorApplication::EditorApplication()
-	: m_camera{ nullptr }, m_mainMenu{ nullptr }, m_imguiPool{ VK_NULL_HANDLE }
+	: m_camera{ nullptr }, m_mainMenu{ nullptr }, m_imguiPool{ VK_NULL_HANDLE }, m_dockSpaceId{ 0 }
 {}
 
 void EditorApplication::Init(Vulkan* vulkan)
@@ -55,23 +63,34 @@ void EditorApplication::Init(Vulkan* vulkan)
 	MenuBuilder builder;
 	builder
 		.SubMenu("File")
-			.SubMenu("New")
-				.Item("Project", [] {})
-				.Item("Scene", [] {})
-			.End()
-			.Item("Open", [] {})
-			.Separator()
-			.Item("Save", [] {})
-			.Item("Save As...", [] {})
-			.Separator()
-			.Item("Close", [] { Quit(); })
+		.SubMenu("New")
+		.Item("Project", []
+			{})
+		.Item("Scene", []
+			{})
+		.End()
+		.Item("Open", []
+			{})
+		.Separator()
+		.Item("Save", []
+			{})
+		.Item("Save As...", []
+			{})
+		.Separator()
+		.Item("Close", []
+			{
+				Quit();
+			})
 		.End()
 		.SubMenu("Edit")
-			.Item("Undo", [] {})
-			.Item("Redo", [] {})
+		.Item("Undo", []
+			{})
+		.Item("Redo", []
+			{})
 		.End()
 		.SubMenu("Help")
-			.Item("About...", [] {})
+		.Item("About...", []
+			{})
 		.End();
 
 	m_mainMenu = builder.Build();
@@ -83,13 +102,25 @@ void EditorApplication::PreRender()
 	ImGui_ImplGlfw_NewFrame();
 
 	ImGui::NewFrame();
-	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+	m_dockSpaceId = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 	m_mainMenu->Render();
 }
 
 void EditorApplication::Render()
-{}
+{
+	if (const ImGuiDockNode* centralNode = ImGui::DockBuilderGetCentralNode(m_dockSpaceId))
+	{
+		ImVec2 centralNodeLoc = centralNode->Pos;
+		ImVec2 centralNodeSize = centralNode->Size;
+		const VkRect2D scissor =
+		{
+			.offset = { static_cast<int32>(centralNodeLoc.x), static_cast<int32>(centralNodeLoc.y) },
+			.extent = { static_cast<uint32>(centralNodeSize.x), static_cast<uint32>(centralNodeSize.y) }
+		};
+		Vulkan::Instance()->GetSwapChain()->UpdateScissor(scissor);
+	}
+}
 
 void EditorApplication::PostRender()
 {

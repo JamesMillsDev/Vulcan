@@ -104,13 +104,14 @@ EExitCode Application::Run()
 		// Render the application
 		PreRender();
 		Render();
-		PostRender();
 
 		// Render the game and world
 		m_game->Render();
 		m_game->GetWorld()->PreRender();
 		m_game->GetWorld()->Render();
 		m_game->GetWorld()->PostRender();
+
+		PostRender();
 
 		Renderer::Instance()->EndFrame();
 	}
