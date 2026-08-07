@@ -1,12 +1,11 @@
 
-# Vulcan
+# Tempest
 
-A 3D Game Engine rendering using the Vulkan SDK. It is named after the Dwarvish word for Forge "Fulk".
+A 3D Game Engine using the Vulkan SDK for rendering and Box3D for graphics.
 
 ## Acknowledgements
 
  - [Vulkan](https://vulkan.org)
- - [KTX](https://github.com/khronosgroup/ktx-software)
  - [GLFW](https://www.glfw.org)
  - [GLM](https://github.com/g-truc/glm)
  - [Assimp](https://www.assimp.org)
