@@ -1,15 +1,25 @@
 #include "EditorApplication.h"
 
-#include <glm/vec3.hpp>
 #include <imgui_internal.h>
+
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
+
+#include <glm/vec3.hpp>
 
 #include "EditorGameInstance.h"
 #include "FlyCamera.h"
 #include "GameTime.h"
+
+#include "Editor/EditorWindow.h"
 #include "Editor/Menu.h"
+#include "Editor/Windows/ConsoleWindow.h"
+#include "Editor/Windows/InspectorWindow.h"
+#include "Editor/Windows/ProjectWindow.h"
+#include "Editor/Windows/WorldWindow.h"
+
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
+
 #include "Graphics/Renderer.h"
 #include "Graphics/Rendering/Material.h"
 #include "Graphics/Rendering/Mesh.h"
@@ -94,6 +104,11 @@ void EditorApplication::Init(Vulkan* vulkan)
 		.End();
 
 	m_mainMenu = builder.Build();
+
+	m_windows.Add(new InspectorWindow);
+	m_windows.Add(new WorldWindow);
+	m_windows.Add(new ProjectWindow);
+	m_windows.Add(new ConsoleWindow);
 }
 
 void EditorApplication::PreRender()
@@ -105,6 +120,11 @@ void EditorApplication::PreRender()
 	m_dockSpaceId = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 	m_mainMenu->Render();
+
+	for (EditorWindow* window : m_windows)
+	{
+		window->Render();
+	}
 }
 
 void EditorApplication::Render()

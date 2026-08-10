@@ -4,8 +4,11 @@
 #include <imgui.h>
 #include <vulkan/vulkan_core.h>
 
+#include <Utility/Collections/TList.h>
+
 namespace Tempest::Editor
 {
+	class EditorWindow;
 	class FlyCamera;
 	class Menu;
 
@@ -17,6 +20,7 @@ namespace Tempest::Editor
 	private:
 		FlyCamera* m_camera;
 		Menu* m_mainMenu;
+		TList<EditorWindow*> m_windows;
 
 		VkDescriptorPool m_imguiPool;
 		ImGuiID m_dockSpaceId;
