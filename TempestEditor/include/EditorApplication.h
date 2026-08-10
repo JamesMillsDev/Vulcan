@@ -31,9 +31,11 @@ namespace Tempest::Editor
 	protected:
 		void Init(Vulkan* vulkan) override;
 		void Tick() override;
+
 		void PreRender() override;
 		void Render() override;
 		void PostRender() override;
+
 		void Shutdown() override;
 
 	private:

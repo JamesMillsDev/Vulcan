@@ -8,4 +8,6 @@ InspectorWindow::InspectorWindow()
 	
 }
 
-void InspectorWindow::OnRender() { }
+void InspectorWindow::OnRender()
+{
+}

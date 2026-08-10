@@ -21,9 +21,6 @@
 #include "Gameplay/Actors/Components/Rendering/LightComponent.h"
 
 #include "Graphics/Renderer.h"
-#include "Graphics/Rendering/Material.h"
-#include "Graphics/Rendering/Mesh.h"
-#include "Graphics/Rendering/Texture.h"
 #include "Graphics/Vulkan/GraphicsDevice.h"
 #include "Graphics/Vulkan/Swapchain.h"
 #include "Graphics/Vulkan/Vulkan.h"
@@ -111,6 +108,11 @@ void EditorApplication::Init(Vulkan* vulkan)
 	m_windows.Add(new ConsoleWindow);
 }
 
+void EditorApplication::Tick()
+{
+	m_camera->Tick();
+}
+
 void EditorApplication::PreRender()
 {
 	ImGui_ImplVulkan_NewFrame();
@@ -146,11 +148,6 @@ void EditorApplication::PostRender()
 {
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), Renderer::CurrentCmdBuffer());
-}
-
-void EditorApplication::Tick()
-{
-	m_camera->Tick();
 }
 
 void EditorApplication::Shutdown()
