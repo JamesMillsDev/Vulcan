@@ -152,6 +152,11 @@ void EditorApplication::PostRender()
 
 void EditorApplication::Shutdown()
 {
+	for (EditorWindow* win : m_windows)
+	{
+		delete win;
+	}
+
 	delete m_mainMenu;
 	delete m_camera;
 

@@ -1,6 +1,6 @@
 {
   "Application": {
-    "Title": "Example Game",
+    "Title": "Tempest Editor",
     "Version": [ 0, 0, 1 ]
   },
   "Window": {
@@ -15,7 +15,7 @@
     "Resizable": true
   },
   "Engine": {
-    "Title": "vulcan",
+    "Title": "tempest",
     "Version": [ 0, 0, 1 ],
     "Content": {
       "Directory": "Resources",
